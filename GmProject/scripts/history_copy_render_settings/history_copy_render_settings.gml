@@ -56,5 +56,6 @@ function history_copy_render_settings(obj)
 	
 	project_render_depth_map_near = obj.project_render_depth_map_near
 	project_render_depth_map_far = obj.project_render_depth_map_far
+	project_render_depth_map_curve = obj.project_render_depth_map_curve
 	project_render_depth_map_near_white = obj.project_render_depth_map_near_white
 }

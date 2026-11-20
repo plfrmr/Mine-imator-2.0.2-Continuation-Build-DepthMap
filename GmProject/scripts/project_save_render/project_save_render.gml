@@ -55,6 +55,7 @@ function project_save_render()
 		
 		json_save_var("depth_map_near", project_render_depth_map_near)
 		json_save_var("depth_map_far", project_render_depth_map_far)
+		json_save_var("depth_map_curve", project_render_depth_map_curve)
 		json_save_var_bool("depth_map_near_white", project_render_depth_map_near_white)
 		
 		json_save_var_bool("texture_filtering", project_render_texture_filtering)

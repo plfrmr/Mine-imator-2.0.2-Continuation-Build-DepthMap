@@ -1,20 +1,21 @@
-/// draw_button_collapse(name, open, script, active, caption, tip)
+/// draw_button_collapse(name, open, script, active, caption, [tip, [badge]])
 /// @arg name
 /// @arg open
 /// @arg script
 /// @arg active
 /// @arg caption
-/// @arg tip
+/// @arg [tip
+/// @arg [badge]]
 
-function draw_button_collapse(name, open, script, active, caption, tip = "")
+function draw_button_collapse(name, open, script, active, caption, tip = "", badge = "")
 {
 	// Mouse states
 	draw_set_font(font_label)
-	
+
 	var xx, yy, wid, mouseon, mousepress, mouseclick;
 	xx = dx - 8
 	yy = dy + (tab_control_h / 2) - 10
-	wid = string_width(text_get(caption)) + 26
+	wid = string_width(text_get(caption)) + 26 + (badge != "" ? badge_width(badge) + 6 : 0)
 	
 	mouseon = app_mouse_box(xx, dy, wid, 24) && content_mouseon && active
 	mousepress = mouseon && mouse_left
@@ -42,11 +43,17 @@ function draw_button_collapse(name, open, script, active, caption, tip = "")
 	
 	// Switch/label
 	if (script)
-		draw_switch(caption, dx, dy, active, script, tip)
+		draw_switch(caption, dx, dy, active, script, tip, false, badge)
 	else
 	{
 		draw_label(text_get(caption), dx, dy + tab_control_h/2, fa_left, fa_middle, c_text_secondary, a_text_secondary, font_label)
-		draw_help_circle(tip, dx + string_width(text_get(caption)) + 4, dy + 2, false)
+
+		var labelw = string_width(text_get(caption));
+
+		if (badge != "")
+			labelw += 6 + draw_badge(badge, dx + labelw + 6, dy + tab_control_h/2)
+
+		draw_help_circle(tip, dx + labelw + 4, dy + 2, false)
 	}
 	
 	// Interact with collapse map?

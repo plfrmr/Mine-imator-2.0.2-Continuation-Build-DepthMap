@@ -89,6 +89,7 @@ function app_startup_interface_tabs()
 			
 			tbx_depth_map_near = new_textbox_decimals()
 			tbx_depth_map_far = new_textbox_decimals()
+			tbx_depth_map_curve = new_textbox_decimals()
 		}
 		
 		// Library

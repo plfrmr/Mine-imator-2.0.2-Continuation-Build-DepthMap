@@ -328,25 +328,35 @@ function tab_properties_render()
 		tab_collapse_end()
 	}
 	
-	// Depth map pass
+	// Depth map pass (settings are marked with a badge, they only affect the Depth map render pass)
+	var depthbadge = text_get("renderdepthbadge");
+
 	tab_control_switch()
-	draw_button_collapse("depth_map", collapse_map[?"depth_map"], null, true, "renderdepthmap", "renderdepthmaptip")
+	draw_button_collapse("depth_map", collapse_map[?"depth_map"], null, true, "renderdepthmap", "renderdepthmaptip", depthbadge)
 	tab_next()
-	
+
 	if (collapse_map[?"depth_map"])
 	{
 		tab_collapse_start()
-		
+
+		// Near distance
 		tab_control_dragger()
-		draw_dragger("renderdepthmapnear", dx, dy, dragger_width, project_render_depth_map_near, max(0.5, project_render_depth_map_near / 50), 0, no_limit, 0, 0, tab.render.tbx_depth_map_near, action_project_render_depth_map_near)
+		draw_dragger("renderdepthmapnear", dx, dy, dragger_width, project_render_depth_map_near, max(0.5, project_render_depth_map_near / 50), 0, no_limit, 0, 0, tab.render.tbx_depth_map_near, action_project_render_depth_map_near, null, true, false, "renderdepthmapneartip", depthbadge)
 		tab_next()
 		
+		// Far distance
 		tab_control_dragger()
-		draw_dragger("renderdepthmapfar", dx, dy, dragger_width, project_render_depth_map_far, max(0.5, project_render_depth_map_far / 50), 0, no_limit, 1000, 0, tab.render.tbx_depth_map_far, action_project_render_depth_map_far)
+		draw_dragger("renderdepthmapfar", dx, dy, dragger_width, project_render_depth_map_far, max(0.5, project_render_depth_map_far / 50), 0, no_limit, 1000, 0, tab.render.tbx_depth_map_far, action_project_render_depth_map_far, null, true, false, "renderdepthmapfartip", depthbadge)
 		tab_next()
 		
+		// Curve
+		tab_control_dragger()
+		draw_dragger("renderdepthmapcurve", dx, dy, dragger_width, project_render_depth_map_curve, 0.01, 0.01, no_limit, 1, 0.01, tab.render.tbx_depth_map_curve, action_project_render_depth_map_curve, null, true, false, "renderdepthmapcurvetip", depthbadge)
+		tab_next()
+		
+		// Near is white
 		tab_control_switch()
-		draw_switch("renderdepthmapnearwhite", dx, dy, project_render_depth_map_near_white, action_project_render_depth_map_near_white)
+		draw_switch("renderdepthmapnearwhite", dx, dy, project_render_depth_map_near_white, action_project_render_depth_map_near_white, "renderdepthmapnearwhitetip", false, depthbadge)
 		tab_next()
 		
 		tab_collapse_end()

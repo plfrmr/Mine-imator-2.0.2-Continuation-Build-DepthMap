@@ -8,6 +8,9 @@ uniform float uFar;
 uniform float uMapNear;
 uniform float uMapFar;
 
+// Exponent applied to the output brightness, 1 = linear
+uniform float uCurve;
+
 // 1 = near is white, far is black
 uniform int uNearWhite;
 
@@ -33,6 +36,8 @@ void main()
 	
 	if (uNearWhite > 0)
 		value = 1.0 - value;
-	
+
+	value = pow(value, max(uCurve, 0.01));
+
 	gl_FragColor = vec4(value, value, value, 1.0);
 }
