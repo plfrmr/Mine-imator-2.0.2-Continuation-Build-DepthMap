@@ -29,7 +29,7 @@ function render_update_samples()
 	{
 		render_samples++
 		
-		if (render_samples > app.project_render_samples)
+		if (render_samples > render_sample_count())
 		{
 			render_samples_done = true
 			render_samples--

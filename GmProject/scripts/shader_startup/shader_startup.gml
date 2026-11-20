@@ -513,6 +513,9 @@ function shader_startup()
 		new_shader_uniform("uRayType")
 		new_shader_uniform("uRayDirection")
 		new_shader_uniform("uRayDistance")
+		new_shader_uniform("uRaySteps")
+		new_shader_uniform("uFullRes")
+		new_shader_uniform("uSkyLight")
 		
 		// Specular
 		new_shader_uniform("uFadeAmount")
@@ -544,6 +547,7 @@ function shader_startup()
 		new_shader_sampler("uMaterialBuffer")
 		new_shader_uniform("uNormalBufferScale")
 		new_shader_uniform("uScreenSize")
+		new_shader_uniform("uFullRes")
 	}
 	
 	with (shader_map[?shader_tonemap])

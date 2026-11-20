@@ -5,7 +5,9 @@ function macros()
 {
 	// Debug
 	#macro dev_mode						true
-	#macro dev_mode_skip_blocks			dev_mode && true
+	#macro dev_mode_skip_blocks			(dev_mode && false)
+	#macro dev_mode_debug_info			(dev_mode && false)	// Show the debug overlay on startup (F12 toggles it)
+	#macro dev_mode_startup_project		(dev_mode && false)	// Open dev_mode_project (or a new project) on startup
 	#macro dev_mode_debug_schematics	dev_mode && true
 	#macro dev_mode_debug_names			dev_mode && true
 	#macro dev_mode_debug_saveid		dev_mode && false

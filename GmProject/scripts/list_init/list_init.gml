@@ -1347,6 +1347,18 @@ function list_init(name)
 			break
 		}
 		
+		// Graphics card
+		case "rendergpu":
+		{
+			menu_add_item("", gpu_adapter_display_name(""))
+			menu_add_item("highperformance", gpu_adapter_display_name("highperformance"))
+
+			for (var i = 0; i < gpu_adapter_count(); i++)
+				menu_add_item(gpu_adapter_get_name(i), gpu_adapter_get_name(i))
+
+			break
+		}
+
 		// Render pass
 		case "viewmodepass":
 		{

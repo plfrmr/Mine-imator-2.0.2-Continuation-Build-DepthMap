@@ -46,6 +46,11 @@ function popup_exportimage_draw()
 	tab_control_checkbox()
 	draw_checkbox("exportimagehighquality", dx, dy, popup.high_quality, action_toolbar_exportimage_high_quality)
 	tab_next()
+
+	// Raytraced
+	tab_control_switch()
+	draw_switch("exportimageraytraced", dx, dy, popup.raytraced, action_toolbar_exportimage_raytraced, "exportimageraytracedtip", false, text_get("renderraytracingbadge"), "fire")
+	tab_next()
 	
 	// Watermark
 	tab_control_checkbox()

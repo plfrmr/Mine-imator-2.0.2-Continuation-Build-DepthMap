@@ -48,6 +48,14 @@ namespace CppProject
 		// Initialize graphics API and load application resources, runs after QApp creation.
 		void Init();
 
+		// Graphics cards (adapters) found at startup and the one used for rendering. Only filled in with Direct3D.
+		QStringList gpuAdapterNames;
+		QString gpuAdapterCurrent;
+
+		// Preferred graphics card, stored in Data/gpu.midata: "" = system default, "highperformance" = automatic, otherwise a card name.
+		static QString GpuPreferenceFile();
+		static QString GpuReadPreference();
+
 		// Sets a world/view/projection matrix
 		void SetMatrix(IntType type, Matrix matrix);
 

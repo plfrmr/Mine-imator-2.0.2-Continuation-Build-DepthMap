@@ -30,7 +30,7 @@ function app_startup_interface()
 	http_assets = http_get(link_assets_versions)
 	
 	// Shortcut to a new project
-	if (dev_mode)
+	if (dev_mode_startup_project)
 	{
 		popup_newproject_clear()
 		

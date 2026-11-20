@@ -1,4 +1,4 @@
-/// draw_switch(name, x, y, active, script, [tip, [disabled, [badge]]])
+/// draw_switch(name, x, y, active, script, [tip, [disabled, [badge, [badgestyle]]]])
 /// @arg name
 /// @arg x
 /// @arg y
@@ -6,9 +6,10 @@
 /// @arg script
 /// @arg [tip
 /// @arg [disabled
-/// @arg [badge]]]
+/// @arg [badge
+/// @arg [badgestyle]]]]
 
-function draw_switch(name, xx, yy, active, script, tip = "", disabled = false, badge = "")
+function draw_switch(name, xx, yy, active, script, tip = "", disabled = false, badge = "", badgestyle = "")
 {
 	var text, switchx, switchy, w, h, pressed, thumbgoal;
 	
@@ -78,10 +79,10 @@ function draw_switch(name, xx, yy, active, script, tip = "", disabled = false, b
 	draw_box_hover(switchx, switchy, 20, 14, microani_arr[e_microani.PRESS])
 	
 	// Label
-	var badgew = (badge != "" ? badge_width(badge) + 6 : 0);
+	var badgew = (badge != "" ? badge_width(badge, badgestyle) + 6 : 0);
 
 	draw_set_font(font_label)
-	text = string_limit(text, w - 32 - badgew)
+	text = string_limit(text, w - 32 - badgew - (tip != "" ? 24 : 0))
 	draw_label(text, xx, yy + (h/2), fa_left, fa_middle, lerp(c_text_secondary, c_text_tertiary, microani_arr[e_microani.DISABLED]), lerp(a_text_secondary, a_text_tertiary, microani_arr[e_microani.DISABLED]))
 
 	microani_update(mouseon, mouseclick, active, disabled, 0, thumbgoal)
@@ -89,7 +90,7 @@ function draw_switch(name, xx, yy, active, script, tip = "", disabled = false, b
 	var labelw = string_width(text);
 
 	if (badge != "")
-		labelw += 6 + draw_badge(badge, xx + labelw + 6, yy + (h/2), disabled)
+		labelw += 6 + draw_badge(badge, xx + labelw + 6, yy + (h/2), disabled, badgestyle)
 
 	draw_help_circle(tip, xx + labelw + 4, yy + (h/2) - 10, disabled)
 	

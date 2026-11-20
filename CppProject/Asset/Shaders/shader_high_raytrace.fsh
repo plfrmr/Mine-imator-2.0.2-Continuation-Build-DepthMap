@@ -41,6 +41,11 @@ uniform float uNoiseSize;
 uniform int uRayType;
 uniform float uRayDistance;
 
+// Raytracing quality
+uniform float uRaySteps; // Base number of ray steps, scaled up by precision
+uniform float uFullRes; // 1 = trace every pixel, 0 = every other pixel (filled in by the resolve pass)
+uniform float uSkyLight; // Light from the sky for diffuse rays that don't hit anything
+
 // Reflections
 uniform float uFadeAmount;
 uniform float uGamma;
@@ -177,7 +182,7 @@ vec3 rayTrace(vec3 rayStart, vec3 rayDir, float rayThickness, vec3 noise)
 	p = progress;
 	
 	float i = 0.0;
-	float steps = 256.0 * (1.0 + uPrecision); // Gradually increase max steps
+	float steps = uRaySteps * (1.0 + uPrecision); // Gradually increase max steps
 	float stepscount = 0.0;
 	float precisionJitter = (uRayType == RAY_SPECULAR ? 1.0 : noise.g);
 	for (; i < steps; i += 1.0)
@@ -256,7 +261,7 @@ void main()
 	vec3 rayCoord = vec3(-1.0);
 	
 	float pixel = (floor(vTexCoord.x * uScreenSize.x) + floor(vTexCoord.y * uScreenSize.y)) + uSampleIndex;
-	bool halfResCast = (mod(pixel, 2.0) == 0.0);
+	bool halfResCast = (uFullRes > 0.5 || mod(pixel, 2.0) == 0.0);
 	
 	// Don't calculate ray if depth isn't valid
 	if (!(depthData.a < 0.001 || depth > 0.999 || materialData.r > 0.95 || !halfResCast))
@@ -351,6 +356,12 @@ void main()
 			
 			// Multiply by diffuse & strength
 			light *= max(0.0, dot(-hitNormal, rayDir));
+		}
+		else if (rayCoord.z >= 0.0 && uSkyLight > 0.0)
+		{
+			// Ray was traced but escaped, light it by the sky (more when pointing up)
+			vec3 worldDir = normalize((uViewMatrixInv * vec4(rayDir, 0.0)).xyz);
+			light = pow(uSkyColor.rgb, vec3(uGamma)) * uSkyLight * uIndirectStength * max(worldDir.z, 0.0);
 		}
 		
 		gl_FragColor = vec4(light, 1.0);

@@ -15,6 +15,7 @@ function app_startup_interface_export()
 	exportmovie_frame_rate = 0
 	exportmovie_framespersecond = 0
 	exportmovie_high_quality = true
+	exportmovie_raytraced = false
 	exportmovie_start = null
 	exportmovie_buffer = null
 }

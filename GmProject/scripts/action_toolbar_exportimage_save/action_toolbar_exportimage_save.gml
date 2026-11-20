@@ -21,6 +21,7 @@ function action_toolbar_exportimage_save()
 	log("Render background", yesno(render_background))
 	log("Watermark", yesno(render_watermark))
 	log("High Quality", yesno(popup_exportimage.high_quality))
+	log("Raytraced", yesno(popup_exportimage.raytraced))
 	log("Size", project_video_width, project_video_height)
 	
 	window_state = "export_image"
@@ -29,9 +30,9 @@ function action_toolbar_exportimage_save()
 	exportmovie_start = current_time
 	render_samples = -1
 	
-	if (view_main.quality = e_view_mode.RENDER)
+	if (view_quality_high(view_main.quality))
 		view_main.quality = e_view_mode.SHADED
 	
-	if (view_second.quality = e_view_mode.RENDER)
+	if (view_quality_high(view_second.quality))
 		view_second.quality = e_view_mode.SHADED
 }

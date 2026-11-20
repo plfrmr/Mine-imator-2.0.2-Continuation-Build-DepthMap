@@ -3,6 +3,8 @@
 
 function render_high_indirect()
 {
+	var blurradius = (render_raytraced ? app.project_render_rt_denoise : app.project_render_indirect_blur_radius);
+	
 	// Raytrace
 	render_surface_hdr[0] = surface_require(render_surface_hdr[0], render_width, render_height, true, true)
 	surface_set_target(render_surface_hdr[0])
@@ -46,7 +48,7 @@ function render_high_indirect()
 	surface_reset_target()
 		
 	// Blur result
-	if (app.project_render_indirect_blur_radius > 0)
+	if (blurradius > 0)
 	{
 		surface_set_target(render_surface_hdr[0])
 		{
@@ -67,7 +69,7 @@ function render_high_indirect()
 		surface_reset_target()
 	}
 	
-	var indirectsurf = (app.project_render_indirect_blur_radius > 0 ? render_surface_hdr[0] : render_surface_hdr[1]);
+	var indirectsurf = (blurradius > 0 ? render_surface_hdr[0] : render_surface_hdr[1]);
 	
 	// Add
 	surface_set_target(render_surface_shadows)

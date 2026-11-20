@@ -49,18 +49,20 @@ function export_update()
 	}
 	
 	if (window_state = "export_image" && render_samples = -1)
-		app_update_cameras(popup_exportimage.high_quality, false)
+		app_update_cameras(popup_exportimage.high_quality || popup_exportimage.raytraced, false)
 	
 	// Render
 	if (window_state = "export_movie")
 	{
 		render_active = "movie"
-		render_quality = (exportmovie_high_quality ? e_view_mode.RENDER : e_view_mode.SHADED)
+		render_raytraced = exportmovie_raytraced
+		render_quality = ((exportmovie_high_quality || render_raytraced) ? e_view_mode.RENDER : e_view_mode.SHADED)
 	}
 	else
 	{
 		render_active = "image"
-		render_quality = (popup_exportimage.high_quality ? e_view_mode.RENDER : e_view_mode.SHADED)
+		render_raytraced = popup_exportimage.raytraced
+		render_quality = ((popup_exportimage.high_quality || render_raytraced) ? e_view_mode.RENDER : e_view_mode.SHADED)
 	}
 	
 	if (window_state = "export_movie" && exportmovie_format = "png")
@@ -80,7 +82,7 @@ function export_update()
 	
 	export_sample++
 	
-	if (render_quality = e_view_mode.RENDER && render_samples = app.project_render_samples)
+	if (render_quality = e_view_mode.RENDER && render_samples = render_sample_count())
 		render_samples_done = true
 	
 	if (!render_samples_done)
@@ -88,6 +90,7 @@ function export_update()
 	
 	render_active = null
 	render_samples = -1
+	render_raytraced = false
 	
 	// Save movie frame
 	if (window_state = "export_movie")

@@ -1,4 +1,4 @@
-/// draw_dragger(name, x, y, width, value, multiplier, min, max, default, snap, textbox, script, [captionwidth, [showcaption, [disabled, [tip, [badge]]]]])
+/// draw_dragger(name, x, y, width, value, multiplier, min, max, default, snap, textbox, script, [captionwidth, [showcaption, [disabled, [tip, [badge, [badgestyle]]]]]])
 /// @arg name
 /// @arg x
 /// @arg y
@@ -15,9 +15,10 @@
 /// @arg [showcaption
 /// @arg [disabled
 /// @arg [tip
-/// @arg [badge]]]]]
+/// @arg [badge
+/// @arg [badgestyle]]]]]]
 
-function draw_dragger(name, xx, yy, wid, value, mul, minval, maxval, def, snapval, tbx, script, capwidth = null, showcaption = true, disabled = false, tip = "", badge = "")
+function draw_dragger(name, xx, yy, wid, value, mul, minval, maxval, def, snapval, tbx, script, capwidth = null, showcaption = true, disabled = false, tip = "", badge = "", badgestyle = "")
 {
 	var caption, hei, fieldx, dragmouseon, badgew;
 
@@ -28,7 +29,7 @@ function draw_dragger(name, xx, yy, wid, value, mul, minval, maxval, def, snapva
 	else if (!showcaption)
 		capwidth = 0
 
-	badgew = (badge != "" ? badge_width(badge) + 6 : 0)
+	badgew = (badge != "" ? badge_width(badge, badgestyle) + 6 : 0)
 
 	draw_set_font(font_label)
 
@@ -148,7 +149,7 @@ function draw_dragger(name, xx, yy, wid, value, mul, minval, maxval, def, snapva
 		var labelw = string_width(caption);
 
 		if (badge != "")
-			labelw += 6 + draw_badge(badge, xx + labelw + 6, yy + hei/2, disabled)
+			labelw += 6 + draw_badge(badge, xx + labelw + 6, yy + hei/2, disabled, badgestyle)
 
 		if (xx + labelw + 28 < fieldx)
 			draw_help_circle(tip, xx + labelw + 4, yy + (hei/2) - 10, disabled)

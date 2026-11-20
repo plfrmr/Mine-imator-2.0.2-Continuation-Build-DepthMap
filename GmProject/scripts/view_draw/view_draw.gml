@@ -16,7 +16,7 @@ function view_draw(view)
 	mouseonresizehor = false
 	mouseonresizever = false
 	
-	if (view = view_main && view_second.show && view_main.quality = e_view_mode.RENDER && view_second.quality = e_view_mode.RENDER)
+	if (view = view_main && view_second.show && view_quality_high(view_main.quality) && view_quality_high(view_second.quality))
 		view_main.quality = e_view_mode.SHADED
 	
 	// Calculate box
@@ -238,29 +238,26 @@ function view_draw(view)
 	
 	dx -= dw
 	
+	// "Raytraced" quality
+	if (draw_button_icon("viewmoderaytraced", dx, dy, dw, dh, view.quality = e_view_mode.RAYTRACED, icons.FIRE, null, false, "viewmoderaytraced"))
+		view_set_quality(view, e_view_mode.RAYTRACED)
+	dx -= dw + padding
+
 	// "Render" quality
 	tip_set_keybind(e_keybind.RENDER_MODE)
 	if (draw_button_icon("viewmoderender", dx, dy, dw, dh, view.quality = e_view_mode.RENDER, setting_theme.dark ? icons.SPHERE_MATERIAL__DARK : icons.SPHERE_MATERIAL, null, false, "viewmoderender"))
-	{
-		view.quality = e_view_mode.RENDER
-		
-		if (view = view_main && view_second.quality = e_view_mode.RENDER)
-			view_second.quality = e_view_mode.SHADED
-		
-		if (view = view_second && view_main.quality = e_view_mode.RENDER)
-			view_main.quality = e_view_mode.SHADED
-	}
+		view_set_quality(view, e_view_mode.RENDER)
 	dx -= dw + padding
 	
 	// "Shaded" quality
 	tip_set_keybind(e_keybind.RENDER_MODE)
 	if (draw_button_icon("viewmodeshaded", dx, dy, dw, dh, view.quality = e_view_mode.SHADED, setting_theme.dark ? icons.SPHERE_SHADING__DARK : icons.SPHERE_SHADING, null, false, "viewmodeshaded"))
-		view.quality = e_view_mode.SHADED
+		view_set_quality(view, e_view_mode.SHADED)
 	dx -= dw + padding
 	
 	// "Flat" quality
 	if (draw_button_icon("viewmodeflat", dx, dy, dw, dh, view.quality = e_view_mode.FLAT, icons.CIRCLE_OUTLINE, null, false, "viewmodeflat"))
-		view.quality = e_view_mode.FLAT
+		view_set_quality(view, e_view_mode.FLAT)
 	dx -= dw + padding
 	
 	// Particles
@@ -443,7 +440,7 @@ function view_draw(view)
 		if (content_mouseon)
 			shortcut_bar_state = "viewport" + (cam = null ? "" : "cam")
 		
-		if (view.quality != e_view_mode.RENDER || view_render_real_time)
+		if (!view_quality_high(view.quality) || view_render_real_time)
 			view_update(view, cam)
 		else if (window_focus = string(view) && !mouse_left && !mouse_right) // Freeze on slow renders bugfix
 			window_busy = ""
@@ -864,12 +861,12 @@ function view_draw(view)
 	}
 	
 	// Render info
-	if (view.quality = e_view_mode.RENDER)
+	if (view_quality_high(view.quality))
 	{
 		var infotext;
 		
 		if (view_render_real_time)
-			infotext = text_get("viewrenderfps", string(fps), max(1, render_samples), project_render_samples)
+			infotext = text_get("viewrenderfps", string(fps), max(1, render_samples), (view.quality = e_view_mode.RAYTRACED ? project_render_rt_samples : project_render_samples))
 		else
 			infotext = ""
 		

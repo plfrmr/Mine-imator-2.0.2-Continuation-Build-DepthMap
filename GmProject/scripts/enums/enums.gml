@@ -860,7 +860,8 @@ function enums()
 	{
 		FLAT,
 		SHADED,
-		RENDER
+		RENDER,
+		RAYTRACED
 	}
 	
 	// Menus
