@@ -837,6 +837,7 @@
 			"pass/": {
 				"combined": "Combined",
 				"depth": "Depth (24bit)",
+				"depthmap": "Depth map (black & white)",
 				"normal": "Normal",
 				"material": "Material",
 				"diffuse": "Diffuse",
@@ -3046,6 +3047,11 @@
 		"glint": "Enchantment glint",
 		"glintspeed": "Speed",
 		"glintstrength": "Strength",
+		"depthmap": "Depth map",
+		"depthmaptip": "Settings for the Depth map (black & white) render pass. Distances are in units from the camera (16 units = 1 block).",
+		"depthmapnear": "Near distance",
+		"depthmapfar": "Far distance",
+		"depthmapnearwhite": "Near is white",
 		"alphamode": "Default alpha mode",
 		"alphamode/": {
 			"blend": "Blended",

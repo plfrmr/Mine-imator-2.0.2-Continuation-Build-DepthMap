@@ -545,6 +545,7 @@ function app_startup_lists()
 		"indirectshadows",
 		"reflections",
 		"depth",
+		"depthmap",
 		"normal",
 		"material"
 	)

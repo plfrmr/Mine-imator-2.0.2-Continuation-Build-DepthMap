@@ -1,5 +1,8 @@
 # Mine-imator
 
+> [!WARNING]
+> This fork of Mine-imator was made PURELY by an LLM, aside from the original Mine-imator code
+
 <p align="center">
   <img src="https://www.mineimatorforums.com/uploads/monthly_2021_08/image.png.4699187f1f02be8222a5bf5100c1738f.png" width=800/>
   <br/>

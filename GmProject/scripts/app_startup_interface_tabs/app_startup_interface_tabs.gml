@@ -86,6 +86,9 @@ function app_startup_interface_tabs()
 			tbx_block_emissive = new_textbox_decimals()
 			tbx_block_emissive.suffix = "%"
 			tbx_block_subsurface_radius = new_textbox_decimals()
+			
+			tbx_depth_map_near = new_textbox_decimals()
+			tbx_depth_map_far = new_textbox_decimals()
 		}
 		
 		// Library

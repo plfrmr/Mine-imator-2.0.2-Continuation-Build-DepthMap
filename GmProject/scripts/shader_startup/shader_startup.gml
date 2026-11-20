@@ -70,6 +70,7 @@ function shader_startup()
 		new_shader("shader_high_samples_add")
 		new_shader("shader_high_samples_unpack")
 		new_shader("shader_high_depth_normal")
+		new_shader("shader_high_depth_map")
 		new_shader("shader_high_material")
 		new_shader("shader_high_subsurface")
 		new_shader("shader_high_subsurface_scatter")
@@ -447,6 +448,16 @@ function shader_startup()
 		new_shader_uniform("uNormalBufferScale")
 		new_shader_uniform("uNear")
 		new_shader_uniform("uFar")
+	}
+	
+	with (shader_map[?shader_high_depth_map])
+	{
+		new_shader_sampler("uDepthBuffer")
+		new_shader_uniform("uNear")
+		new_shader_uniform("uFar")
+		new_shader_uniform("uMapNear")
+		new_shader_uniform("uMapFar")
+		new_shader_uniform("uNearWhite")
 	}
 	
 	with (shader_map[?shader_high_material])

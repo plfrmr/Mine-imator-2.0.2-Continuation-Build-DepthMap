@@ -328,6 +328,30 @@ function tab_properties_render()
 		tab_collapse_end()
 	}
 	
+	// Depth map pass
+	tab_control_switch()
+	draw_button_collapse("depth_map", collapse_map[?"depth_map"], null, true, "renderdepthmap", "renderdepthmaptip")
+	tab_next()
+	
+	if (collapse_map[?"depth_map"])
+	{
+		tab_collapse_start()
+		
+		tab_control_dragger()
+		draw_dragger("renderdepthmapnear", dx, dy, dragger_width, project_render_depth_map_near, max(0.5, project_render_depth_map_near / 50), 0, no_limit, 0, 0, tab.render.tbx_depth_map_near, action_project_render_depth_map_near)
+		tab_next()
+		
+		tab_control_dragger()
+		draw_dragger("renderdepthmapfar", dx, dy, dragger_width, project_render_depth_map_far, max(0.5, project_render_depth_map_far / 50), 0, no_limit, 1000, 0, tab.render.tbx_depth_map_far, action_project_render_depth_map_far)
+		tab_next()
+		
+		tab_control_switch()
+		draw_switch("renderdepthmapnearwhite", dx, dy, project_render_depth_map_near_white, action_project_render_depth_map_near_white)
+		tab_next()
+		
+		tab_collapse_end()
+	}
+	
 	// Default emissive
 	tab_control_dragger()
 	draw_dragger("renderdefaultemissive", dx, dy, dragger_width, round(project_render_block_emissive * 100), 1, 0, no_limit, 100, 1, tab.render.tbx_block_emissive, action_project_render_block_emissive, null, true, false, "renderdefaultemissivetip")

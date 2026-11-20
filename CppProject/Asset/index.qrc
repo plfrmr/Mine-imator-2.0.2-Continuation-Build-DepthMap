@@ -41,6 +41,8 @@
 		<file>Shaders/Compiled/shader_draw_texture.vsh.d3d</file>
 		<file>Shaders/Compiled/shader_high_bloom_threshold.fsh.d3d</file>
 		<file>Shaders/Compiled/shader_high_bloom_threshold.vsh.d3d</file>
+		<file>Shaders/Compiled/shader_high_depth_map.fsh.d3d</file>
+		<file>Shaders/Compiled/shader_high_depth_map.vsh.d3d</file>
 		<file>Shaders/Compiled/shader_high_depth_normal.fsh.d3d</file>
 		<file>Shaders/Compiled/shader_high_depth_normal.vsh.d3d</file>
 		<file>Shaders/Compiled/shader_high_dof.fsh.d3d</file>
@@ -147,6 +149,8 @@
 		<file>Shaders/shader_draw_texture.vsh</file>
 		<file>Shaders/shader_high_bloom_threshold.fsh</file>
 		<file>Shaders/shader_high_bloom_threshold.vsh</file>
+		<file>Shaders/shader_high_depth_map.fsh</file>
+		<file>Shaders/shader_high_depth_map.vsh</file>
 		<file>Shaders/shader_high_depth_normal.fsh</file>
 		<file>Shaders/shader_high_depth_normal.vsh</file>
 		<file>Shaders/shader_high_dof.fsh</file>
