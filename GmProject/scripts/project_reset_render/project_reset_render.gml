@@ -64,6 +64,8 @@ function project_reset_render()
 	project_render_depth_map_near = 0
 	project_render_depth_map_far = 1000
 	project_render_depth_map_curve = 1
+	project_render_depth_map_normal_detail = true
+	project_render_depth_map_detail_depth = 0.1
 	
 	project_render_rt_samples = 128
 	project_render_rt_precision = 0.8
@@ -73,10 +75,35 @@ function project_reset_render()
 	project_render_rt_full_res = true
 	project_render_rt_indirect = true
 	project_render_rt_indirect_strength = 1
-	project_render_rt_sky_light = 0.5
+	project_render_rt_sky_light = 0
 	project_render_rt_denoise = 1
 	project_render_rt_reflections = true
 	project_render_rt_reflections_fade = 0.5
+	project_render_rt_hardware = true
+	project_render_rt_bounces = 2
+	project_render_rt_reflection_bounces = 1
+	project_render_rt_ray_offset = 0.05
+	project_render_rt_alpha_cutout = true
+	project_render_rt_shadows = true
+	project_render_rt_sun_softness = 1
+	project_render_rt_light_softness = 1
+	project_render_rt_ambient = 1
+	project_render_rt_emissive = 1
+	project_render_rt_bounce_lights = true
+	project_render_rt_reflection_strength = 1
+	project_render_rt_roughness_cutoff = 0.9
+	project_render_rt_specular = true
+	project_render_rt_tinted_shadows = true
+	project_render_rt_tint_strength = 2
+	project_render_rt_bounce_saturation = 1.5
+	project_render_pbr_normal_maps = true
+	project_render_pbr_normal_strength = 1
+	project_render_pbr_pack_maps = true
+	project_render_pbr_roughness = 1
+	project_render_pbr_metallic = 1
+	project_render_pbr_reflectivity = 1
+	project_render_pbr_texture_ao = true
+	project_render_pbr_ao_strength = 1
 	project_render_depth_map_near_white = true
 	
 	texture_set_mipmap_level(project_render_texture_filtering_level)

@@ -35,6 +35,12 @@ function render_world_scenery(scenery, res, repeatenable, rep)
 							render_set_uniform("uRoughness", shader_uniform_roughness)
 						}
 						
+						if (value_inherit[e_value.REFLECTIVENESS] != shader_uniform_reflectiveness)
+						{
+							shader_uniform_reflectiveness = value_inherit[e_value.REFLECTIVENESS]
+							render_set_uniform("uReflectiveness", shader_uniform_reflectiveness)
+						}
+						
 						if (value_inherit[e_value.METALLIC] != shader_uniform_metallic)
 						{
 							shader_uniform_metallic = value_inherit[e_value.METALLIC]

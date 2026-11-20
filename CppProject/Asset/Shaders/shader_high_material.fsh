@@ -7,6 +7,7 @@ uniform int uAlphaHash;
 
 uniform vec3 uCameraPosition; // static
 uniform float uMetallic;
+uniform float uReflectiveness; // Minimum reflectivity (F0), lets non-metals reflect
 uniform float uRoughness;
 uniform float uEmissive;
 uniform int uIsSky;
@@ -31,6 +32,20 @@ float fresnelSchlickRoughness(float cosTheta, float F0, float roughness)
 }
 
 uniform int uUseNormalMap; // static
+// PBR render settings
+uniform float uNormalStrength;
+uniform float uPBRRoughness;
+uniform float uPBRMetallic;
+uniform float uPBRReflectivity;
+
+// Applies the PBR render settings (Roughness, Metallic, Reflectivity multipliers)
+void scalePBR(inout float roughness, inout float metallic, inout float F0)
+{
+	roughness = clamp(roughness * uPBRRoughness, 0.0, 1.0);
+	metallic = clamp(metallic * uPBRMetallic, 0.0, 1.0);
+	F0 = clamp(F0 * uPBRReflectivity, 0.0, 1.0);
+}
+
 vec3 getMappedNormal(vec2 uv)
 {
 	if (uUseNormalMap < 1)
@@ -39,6 +54,7 @@ vec3 getMappedNormal(vec2 uv)
 	vec4 n = texture2D(uTextureNormal, uv).rgba;
 	n.rgba = (n.a < 0.01 ? vec4(.5, .5, 0.0, 1.0) : n.rgba); // No normal?
 	n.xy = n.xy * 2.0 - 1.0; // Decode
+	n.xy *= uNormalStrength; // Normal strength setting
 	n.z = sqrt(max(0.0, 1.0 - dot(n.xy, n.xy))); // Get Z
 	n.y *= -1.0; // Convert Y- to Y+
 	return normalize(vTBN * n.xyz);
@@ -73,6 +89,9 @@ void getMaterial(out float roughness, out float metallic, out float emissive, ou
 		
 		roughness = pow(1.0 - matColor.r, 2.0);
 		emissive = (matColor.a < 1.0 ? matColor.a /= 0.9961 : 0.0) * uDefaultEmissive;
+		scalePBR(roughness, metallic, F0);
+		F0 = max(F0, uReflectiveness);
+		roughness = min(roughness, 1.0 - uReflectiveness);
 		
 		return;
 	}
@@ -91,6 +110,9 @@ void getMaterial(out float roughness, out float metallic, out float emissive, ou
 	}
 	
 	F0 = mix(0.0, 1.0, metallic);
+	scalePBR(roughness, metallic, F0);
+	F0 = max(F0, uReflectiveness);
+	roughness = min(roughness, 1.0 - uReflectiveness);
 	sss = vCustom.w * uDefaultSubsurface;
 }
 

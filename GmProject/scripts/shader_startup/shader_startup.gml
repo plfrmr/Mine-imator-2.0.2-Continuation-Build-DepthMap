@@ -448,6 +448,7 @@ function shader_startup()
 		new_shader_uniform("uNormalBufferScale")
 		new_shader_uniform("uNear")
 		new_shader_uniform("uFar")
+		new_shader_uniform("uHeightDepth")
 	}
 	
 	with (shader_map[?shader_high_depth_map])

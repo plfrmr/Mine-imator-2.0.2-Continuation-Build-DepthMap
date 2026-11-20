@@ -261,6 +261,7 @@ function tl_update_matrix(usepaths = false, updateik = true, updatepose = false)
 			value_inherit[e_value.EMISSIVE] = value[e_value.EMISSIVE] // Added
 			value_inherit[e_value.METALLIC] = value[e_value.METALLIC] // Added
 			value_inherit[e_value.ROUGHNESS] = value[e_value.ROUGHNESS] // Added
+			value_inherit[e_value.REFLECTIVENESS] = value[e_value.REFLECTIVENESS] // Added
 			value_inherit[e_value.SUBSURFACE] = value[e_value.SUBSURFACE] // Added
 			value_inherit[e_value.SUBSURFACE_RADIUS_RED] = value[e_value.SUBSURFACE_RADIUS_RED] // Multiplied
 			value_inherit[e_value.SUBSURFACE_RADIUS_GREEN] = value[e_value.SUBSURFACE_RADIUS_GREEN] // Multiplied
@@ -353,6 +354,7 @@ function tl_update_matrix(usepaths = false, updateik = true, updatepose = false)
 					value_inherit[e_value.TEXTURE_NORMAL_OBJ] = par.value[e_value.TEXTURE_NORMAL_OBJ]
 					value_inherit[e_value.METALLIC] = clamp(value_inherit[e_value.METALLIC] + par.value[e_value.METALLIC], 0, 1)
 					value_inherit[e_value.ROUGHNESS] = clamp(value_inherit[e_value.ROUGHNESS] * par.value[e_value.ROUGHNESS], 0, 1)
+					value_inherit[e_value.REFLECTIVENESS] = clamp(value_inherit[e_value.REFLECTIVENESS] + par.value[e_value.REFLECTIVENESS], 0, 1)
 					value_inherit[e_value.EMISSIVE] = (value_inherit[e_value.EMISSIVE] + par.value[e_value.EMISSIVE])
 				}
 				

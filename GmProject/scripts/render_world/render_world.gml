@@ -38,7 +38,9 @@ function render_world(mode)
 	{
 		render_world_tl_reset()
 		render_world_ground()
+		rt_capture_pause(true) // Clouds don't block sunlight in ray tracing
 		render_world_sky_clouds()
+		rt_capture_pause(false)
 		render_world_tl_reset()
 	}
 	

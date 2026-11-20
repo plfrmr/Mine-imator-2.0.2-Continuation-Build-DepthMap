@@ -41,7 +41,7 @@ if (WIN32)
 	set(EXT_DIR "${CMAKE_SOURCE_DIR}/External/${WIN_EXT_FOLDER}")
 	set(LIBS "${EXT_DIR}/zip.lib" "${EXT_DIR}/zlibstatic.lib" "${EXT_DIR}/OpenAL32.lib" "${EXT_DIR}/libx264.lib") # Zip, OpenAL, x264 (precompiled)
 	set(LIBS ${LIBS} "Mf" "Mfplat" "mfuuid" "strmiids") # FFmpeg dependencies
-	set(LIBS ${LIBS} "d3d11.lib" "dxgi.lib" "$<$<CONFIG:Debug>:d3dcompiler.lib>$<$<CONFIG:RelWithDebInfo>:d3dcompiler.lib>") # Direct3D 11
+	set(LIBS ${LIBS} "d3d11.lib" "d3d12.lib" "dxgi.lib" "$<$<CONFIG:Debug>:d3dcompiler.lib>$<$<CONFIG:RelWithDebInfo>:d3dcompiler.lib>") # Direct3D 11
 	set(APPICON_RC "${CMAKE_SOURCE_DIR}/Asset/Icons/appicon.rc")
 	set(CMAKE_MFC_FLAG 1)
 	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -159,15 +159,35 @@ set(LIBS ${LIBS} "${EXT_DIR}/libswresample.a")
 set(LIBS ${LIBS} "${EXT_DIR}/libswscale.a")
 set(LIBS ${LIBS} "${EXT_DIR}/libavutil.a")
 
+# Compile the hardware ray tracing shader (DXR 1.1 inline ray tracing) with DXC from the Windows SDK
+if (WIN32)
+	file(GLOB DXC_HINTS "C:/Program Files (x86)/Windows Kits/10/bin/*/x64")
+	list(SORT DXC_HINTS ORDER DESCENDING)
+	find_program(DXC_EXECUTABLE dxc HINTS "C:/Program Files (x86)/Windows Kits/10/bin/${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}/x64" ${DXC_HINTS} REQUIRED)
+	message("DXC = ${DXC_EXECUTABLE}")
+	set(RT_SHADER_DIR "${CMAKE_BINARY_DIR}/RtShaders")
+	file(MAKE_DIRECTORY ${RT_SHADER_DIR})
+	add_custom_command(
+		OUTPUT "${RT_SHADER_DIR}/RayTracerCS.h"
+		COMMAND "${DXC_EXECUTABLE}" -nologo -T cs_6_5 -E main -O3 -Vn g_RayTracerCS -Fh "${RT_SHADER_DIR}/RayTracerCS.h" "${CMAKE_SOURCE_DIR}/Render/RayTracer.hlsl"
+		DEPENDS "${CMAKE_SOURCE_DIR}/Render/RayTracer.hlsl"
+		COMMENT "Compiling RayTracer.hlsl"
+	)
+	set(RT_SHADER_HEADER "${RT_SHADER_DIR}/RayTracerCS.h")
+endif()
+
 # Add C++ sources
 file(GLOB_RECURSE SRCS RELATIVE "${CMAKE_SOURCE_DIR}" "*.cpp" "*.hpp")
 source_group(TREE "${CMAKE_SOURCE_DIR}" PREFIX ${PROJECT_NAME} FILES ${SRCS})
 qt5_add_resources(SRCS ${QT_INDEX_FILE})
 
 # Create executable
-add_executable(${PROJECT_NAME} ${SRCS} ${APPICON_RC})
+add_executable(${PROJECT_NAME} ${SRCS} ${APPICON_RC} ${RT_SHADER_HEADER})
 target_precompile_headers(${PROJECT_NAME} PUBLIC "Common.hpp")
 target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIRS})
+if (WIN32)
+	target_include_directories(${PROJECT_NAME} PUBLIC ${RT_SHADER_DIR})
+endif()
 target_link_libraries(${PROJECT_NAME} ${LIBS})
 
 # Project file settings

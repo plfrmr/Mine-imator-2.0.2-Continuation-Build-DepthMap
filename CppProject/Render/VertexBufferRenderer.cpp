@@ -4,6 +4,7 @@
 #include "Asset/Shader.hpp"
 #include "Asset/VertexBuffer.hpp"
 #include "GraphicsApiHandler.hpp"
+#include "RayTracer.hpp"
 
 namespace CppProject
 {
@@ -19,6 +20,10 @@ namespace CppProject
 			return;
 
 		Mesh<>* mesh = buffer->meshes[0];
+
+		// Record the object for hardware ray tracing
+		if (RayTracer::IsCapturing())
+			RayTracer::CaptureAdd(buffer);
 
 		// Max triangles exceeded
 		if (currentBatch->numObjects && currentBatch->mesh.numIndices + mesh->numIndices >= MAX_BATCH_INDICES)

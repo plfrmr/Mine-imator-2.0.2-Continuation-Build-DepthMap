@@ -14,7 +14,8 @@ function render_update_samples()
 		(!matrix_equals(render_matrix, view_proj_matrix)) ||
 		(render_target_size[X] != render_width) ||
 		(render_target_size[Y] != render_height) ||
-		!surface_exists(render_surface_sample_dec));
+		!surface_exists(render_surface_sample_dec) ||
+		(render_rt_hw && rt_debug_changed()));
 	
 	if (refresh)
 	{

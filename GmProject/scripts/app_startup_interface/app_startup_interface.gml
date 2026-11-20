@@ -64,5 +64,17 @@ function app_startup_interface()
 		// First start
 		if (!file_exists_lib(settings_file))
 			popup_show(popup_welcome)
+		
+		// Developer: open a project in Raytraced mode (Data/rtdebug_open.txt)
+		var rtopen = rt_debug_open_project();
+		if (rtopen != "" && file_exists_lib(rtopen))
+		{
+			project_load(rtopen)
+			var rtmode = rt_debug_open_mode();
+			view_main.quality = ((rtmode = "render" || rtmode = "depthmap") ? e_view_mode.RENDER : e_view_mode.RAYTRACED)
+			if (rtmode = "depthmap")
+				project_render_pass = e_render_pass.DEPTH_MAP
+			window_state = ""
+		}
 	}
 }

@@ -29,6 +29,7 @@ uniform float uDefaultEmissive;
 uniform float uDefaultSubsurface;
 uniform int uMaterialFormat;
 uniform float uMetallic;
+uniform float uReflectiveness; // Minimum reflectivity (F0), lets non-metals reflect
 uniform float uRoughness;
 uniform float uEmissive;
 
@@ -95,6 +96,20 @@ float hash(vec2 c)
 	(0.1 + abs(sin(13.0 * c.y + c.x))));
 }
 
+// PBR render settings
+uniform float uNormalStrength;
+uniform float uPBRRoughness;
+uniform float uPBRMetallic;
+uniform float uPBRReflectivity;
+
+// Applies the PBR render settings (Roughness, Metallic, Reflectivity multipliers)
+void scalePBR(inout float roughness, inout float metallic, inout float F0)
+{
+	roughness = clamp(roughness * uPBRRoughness, 0.0, 1.0);
+	metallic = clamp(metallic * uPBRMetallic, 0.0, 1.0);
+	F0 = clamp(F0 * uPBRReflectivity, 0.0, 1.0);
+}
+
 void getMaterial(out float roughness, out float metallic, out float emissive, out float F0, out float sss)
 {
 	vec4 matColor = texture2D(uTextureMaterial, vTexCoord);
@@ -113,6 +128,9 @@ void getMaterial(out float roughness, out float metallic, out float emissive, ou
 		
 		roughness = pow(1.0 - matColor.r, 2.0);
 		emissive = (matColor.a < 1.0 ? matColor.a /= 0.9961 : 0.0) * uDefaultEmissive;
+		scalePBR(roughness, metallic, F0);
+		F0 = max(F0, uReflectiveness);
+		roughness = min(roughness, 1.0 - uReflectiveness);
 		
 		return;
 	}
@@ -131,6 +149,9 @@ void getMaterial(out float roughness, out float metallic, out float emissive, ou
 	}
 	
 	F0 = mix(0.0, 1.0, metallic);
+	scalePBR(roughness, metallic, F0);
+	F0 = max(F0, uReflectiveness);
+	roughness = min(roughness, 1.0 - uReflectiveness);
 	sss = vCustom.w * uDefaultSubsurface;
 }
 

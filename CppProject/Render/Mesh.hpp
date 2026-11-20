@@ -35,6 +35,9 @@ namespace CppProject
 		Heap<uint32_t> indexData;
 		Bounds bounds;
 
+		// Unique ID while the GPU buffers exist, used to cache ray tracing geometry (0 = none)
+		uint64_t uid = 0;
+
 	#if API_D3D11
 		ID3D11Buffer* d3dVertexBuffer = nullptr;
 		ID3D11Buffer* d3dIndexBuffer = nullptr;

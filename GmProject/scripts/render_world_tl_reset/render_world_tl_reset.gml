@@ -49,6 +49,11 @@ function render_world_tl_reset()
 	shader_uniform_roughness = 0
 	render_set_uniform("uRoughness", shader_uniform_roughness)
 	
+	rt_capture_shadows(true)
+	
+	shader_uniform_reflectiveness = 0
+	render_set_uniform("uReflectiveness", shader_uniform_reflectiveness)
+	
 	// Wind
 	shader_uniform_wind = false
 	shader_uniform_wind_terrain = false

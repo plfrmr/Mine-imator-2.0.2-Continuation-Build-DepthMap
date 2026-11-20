@@ -90,6 +90,7 @@ function app_startup_interface_tabs()
 			tbx_depth_map_near = new_textbox_decimals()
 			tbx_depth_map_far = new_textbox_decimals()
 			tbx_depth_map_curve = new_textbox_decimals()
+			tbx_depth_map_detail_depth = new_textbox_decimals()
 			
 			tbx_rt_samples = new_textbox_decimals()
 			tbx_rt_precision = new_textbox_decimals()
@@ -100,6 +101,22 @@ function app_startup_interface_tabs()
 			tbx_rt_sky_light = new_textbox_decimals()
 			tbx_rt_denoise = new_textbox_decimals()
 			tbx_rt_reflections_fade = new_textbox_decimals()
+			tbx_rt_bounces = new_textbox_decimals()
+			tbx_rt_reflection_bounces = new_textbox_decimals()
+			tbx_rt_ray_offset = new_textbox_decimals()
+			tbx_rt_sun_softness = new_textbox_decimals()
+			tbx_rt_light_softness = new_textbox_decimals()
+			tbx_rt_ambient = new_textbox_decimals()
+			tbx_rt_emissive = new_textbox_decimals()
+			tbx_rt_reflection_strength = new_textbox_decimals()
+			tbx_rt_tint_strength = new_textbox_decimals()
+			tbx_rt_bounce_saturation = new_textbox_decimals()
+			tbx_pbr_normal_strength = new_textbox_decimals()
+			tbx_pbr_roughness = new_textbox_decimals()
+			tbx_pbr_metallic = new_textbox_decimals()
+			tbx_pbr_reflectivity = new_textbox_decimals()
+			tbx_pbr_ao_strength = new_textbox_decimals()
+			tbx_rt_roughness_cutoff = new_textbox_decimals()
 		}
 		
 		// Library
@@ -550,6 +567,8 @@ function app_startup_interface_tabs()
 			tbx_metallic.suffix = "%"
 			tbx_roughness = new_textbox_integer()
 			tbx_roughness.suffix = "%"
+			tbx_reflectiveness = new_textbox_integer()
+			tbx_reflectiveness.suffix = "%"
 			tbx_subsurface = new_textbox_decimals()
 			tbx_subsurface_radius[X] = new_textbox_integer()
 			tbx_subsurface_radius[X].suffix = "%"

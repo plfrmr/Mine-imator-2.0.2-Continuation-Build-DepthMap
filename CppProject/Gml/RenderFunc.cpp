@@ -8,10 +8,12 @@
 #include "Asset/VertexBuffer.hpp"
 #include "Render/GLWidget.hpp"
 #include "Render/GraphicsApiHandler.hpp"
+#include "Render/RayTracer.hpp"
 #include "Render/PrimitiveRenderer.hpp"
 #include "Render/VertexBufferRenderer.hpp"
 
 #include <QFile>
+#include <QCoreApplication>
 
 namespace CppProject
 {
@@ -754,5 +756,91 @@ namespace CppProject
 			return;
 		}
 		file.write(((QString)name).toUtf8());
+	}
+	BoolType rt_supported()
+	{
+		return RayTracer::IsSupported();
+	}
+
+	StringType rt_status()
+	{
+		return RayTracer::GetStatus();
+	}
+
+	void rt_capture_begin()
+	{
+		RayTracer::CaptureBegin();
+	}
+
+	void rt_capture_end()
+	{
+		RayTracer::CaptureEnd();
+	}
+
+	void rt_capture_pause(BoolType pause)
+	{
+		RayTracer::CapturePause(pause);
+	}
+
+	void rt_capture_shadows(BoolType castShadows)
+	{
+		RayTracer::CaptureShadows(castShadows);
+	}
+
+	BoolType rt_capture_needed()
+	{
+		return RayTracer::NeedsCapture();
+	}
+
+	void rt_set_camera(ArrType viewInv, ArrType projInv, RealType zNear, RealType zFar, RealType camX, RealType camY, RealType camZ)
+	{
+		RayTracer::SetCamera(Matrix(viewInv), Matrix(projInv), zNear, zFar, camX, camY, camZ);
+	}
+
+	void rt_light_clear()
+	{
+		RayTracer::ClearLights();
+	}
+
+	void rt_light_add(IntType type, RealType x, RealType y, RealType z, RealType dx, RealType dy, RealType dz, RealType r, RealType g, RealType b,
+					  RealType strength, RealType range, RealType fadeSize, RealType size, RealType spotFov, RealType spotSharpness, RealType specular, BoolType castShadows)
+	{
+		RayTracer::AddLight(type, x, y, z, dx, dy, dz, r, g, b, strength, range, fadeSize, size, spotFov, spotSharpness, specular, castShadows);
+	}
+
+	void rt_set_param(StringType name, RealType value)
+	{
+		RayTracer::SetParam((QString)name, value);
+	}
+
+	BoolType rt_trace(IntType depthSurf, IntType normalSurf, IntType diffuseSurf, IntType materialSurf, IntType emissiveSurf, IntType lightSurf, IntType specSurf, IntType sampleIndex)
+	{
+		return RayTracer::Trace(depthSurf, normalSurf, diffuseSurf, materialSurf, emissiveSurf, lightSurf, specSurf, sampleIndex);
+	}
+
+	BoolType rt_debug_changed()
+	{
+		return RayTracer::DebugChanged();
+	}
+
+	StringType rt_debug_open_project()
+	{
+		QFile file(QCoreApplication::applicationDirPath() + "/Data/rtdebug_open.txt");
+		if (!file.open(QFile::ReadOnly))
+			return "";
+		return QString::fromUtf8(file.readAll()).trimmed().split(QChar(10)).value(0).trimmed();
+	}
+
+	StringType rt_debug_open_mode()
+	{
+		QFile file(QCoreApplication::applicationDirPath() + "/Data/rtdebug_open.txt");
+		if (!file.open(QFile::ReadOnly))
+			return "";
+		return QString::fromUtf8(file.readAll()).trimmed().split(QChar(10)).value(1).trimmed();
+	}
+
+	void rt_free()
+	{
+		RayTracer::Free();
 	}
 }
