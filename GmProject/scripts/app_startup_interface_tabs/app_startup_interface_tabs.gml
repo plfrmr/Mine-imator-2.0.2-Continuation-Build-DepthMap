@@ -90,6 +90,16 @@ function app_startup_interface_tabs()
 			tbx_depth_map_near = new_textbox_decimals()
 			tbx_depth_map_far = new_textbox_decimals()
 			tbx_depth_map_curve = new_textbox_decimals()
+			
+			tbx_rt_samples = new_textbox_decimals()
+			tbx_rt_precision = new_textbox_decimals()
+			tbx_rt_steps = new_textbox_decimals()
+			tbx_rt_distance = new_textbox_decimals()
+			tbx_rt_thickness = new_textbox_decimals()
+			tbx_rt_indirect_strength = new_textbox_decimals()
+			tbx_rt_sky_light = new_textbox_decimals()
+			tbx_rt_denoise = new_textbox_decimals()
+			tbx_rt_reflections_fade = new_textbox_decimals()
 		}
 		
 		// Library

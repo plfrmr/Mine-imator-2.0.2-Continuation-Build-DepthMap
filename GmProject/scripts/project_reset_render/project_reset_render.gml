@@ -64,6 +64,19 @@ function project_reset_render()
 	project_render_depth_map_near = 0
 	project_render_depth_map_far = 1000
 	project_render_depth_map_curve = 1
+	
+	project_render_rt_samples = 128
+	project_render_rt_precision = 0.8
+	project_render_rt_steps = 512
+	project_render_rt_distance = 5000
+	project_render_rt_thickness = 1
+	project_render_rt_full_res = true
+	project_render_rt_indirect = true
+	project_render_rt_indirect_strength = 1
+	project_render_rt_sky_light = 0.5
+	project_render_rt_denoise = 1
+	project_render_rt_reflections = true
+	project_render_rt_reflections_fade = 0.5
 	project_render_depth_map_near_white = true
 	
 	texture_set_mipmap_level(project_render_texture_filtering_level)

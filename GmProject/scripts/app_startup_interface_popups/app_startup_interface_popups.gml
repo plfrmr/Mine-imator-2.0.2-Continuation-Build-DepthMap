@@ -94,6 +94,7 @@ function app_startup_interface_popups()
 		remove_background = app.setting_export_movie_remove_background
 		include_hidden = app.setting_export_movie_include_hidden
 		high_quality = app.setting_export_movie_high_quality
+		raytraced = app.setting_export_movie_raytraced
 		watermark = app.setting_export_movie_watermark
 		tbx_video_size_custom_width = new_textbox_integer()
 		tbx_video_size_custom_height = new_textbox_integer()
@@ -108,6 +109,7 @@ function app_startup_interface_popups()
 		remove_background = app.setting_export_image_remove_background
 		include_hidden = app.setting_export_image_include_hidden
 		high_quality = app.setting_export_image_high_quality
+		raytraced = app.setting_export_image_raytraced
 		watermark = app.setting_export_image_watermark
 		tbx_image_size_custom_width = new_textbox_integer()
 		tbx_image_size_custom_height = new_textbox_integer()

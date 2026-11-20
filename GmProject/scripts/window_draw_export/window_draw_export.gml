@@ -13,18 +13,18 @@ function window_draw_export()
 	// Set dimensions
 	if (window_state = "export_movie")
 	{
-		usesamples = popup_exportmovie.high_quality
+		usesamples = (popup_exportmovie.high_quality || popup_exportmovie.raytraced)
 		totalframes = ceil(((exportmovie_marker_end - exportmovie_marker_start) / project_tempo) * popup_exportmovie.framespersecond)
 		if (usesamples)
-			totalsamples = totalframes * project_render_samples
+			totalsamples = totalframes * (popup_exportmovie.raytraced ? project_render_rt_samples : project_render_samples)
 		else
 			totalsamples = totalframes
 	}
 	else
 	{
-		usesamples = popup_exportimage.high_quality
+		usesamples = (popup_exportimage.high_quality || popup_exportimage.raytraced)
 		if (usesamples)
-			totalframes = project_render_samples
+			totalframes = (popup_exportimage.raytraced ? project_render_rt_samples : project_render_samples)
 		else
 			totalframes = 1
 		totalsamples = totalframes
@@ -87,7 +87,7 @@ function window_draw_export()
 	
 	var samplecount = "";
 	if (usesamples)
-		samplecount = text_get("exportsamples", string(max(render_samples, 1)), string(project_render_samples))
+		samplecount = text_get("exportsamples", string(max(render_samples, 1)), string(((window_state = "export_movie" ? popup_exportmovie.raytraced : popup_exportimage.raytraced) ? project_render_rt_samples : project_render_samples)))
 	var text = "";
 	
 	if (window_state = "export_movie")

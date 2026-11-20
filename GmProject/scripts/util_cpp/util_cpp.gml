@@ -417,3 +417,37 @@ function clip_is_active()
 function update_frustum()
 {
 }
+
+/// CppSeparate IntType gpu_adapter_count()
+/// Returns the number of hardware graphics cards (adapters) found when the graphics device was created.
+function gpu_adapter_count()
+{
+	return 0
+}
+
+/// CppSeparate StringType gpu_adapter_get_name(IntType)
+/// Returns the name of a graphics card by index.
+function gpu_adapter_get_name(index)
+{
+	return ""
+}
+
+/// CppSeparate StringType gpu_adapter_get_current()
+/// Returns the name of the graphics card used for rendering.
+function gpu_adapter_get_current()
+{
+	return ""
+}
+
+/// CppSeparate StringType gpu_adapter_get_preferred()
+/// Returns the preferred graphics card: "" = system default, "highperformance" = automatic high performance, or a card name.
+function gpu_adapter_get_preferred()
+{
+	return ""
+}
+
+/// CppSeparate void gpu_adapter_set_preferred(StringType)
+/// Stores the preferred graphics card, used the next time Mine-imator starts.
+function gpu_adapter_set_preferred(name)
+{
+}

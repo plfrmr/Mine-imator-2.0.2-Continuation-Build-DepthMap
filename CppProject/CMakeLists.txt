@@ -41,7 +41,7 @@ if (WIN32)
 	set(EXT_DIR "${CMAKE_SOURCE_DIR}/External/${WIN_EXT_FOLDER}")
 	set(LIBS "${EXT_DIR}/zip.lib" "${EXT_DIR}/zlibstatic.lib" "${EXT_DIR}/OpenAL32.lib" "${EXT_DIR}/libx264.lib") # Zip, OpenAL, x264 (precompiled)
 	set(LIBS ${LIBS} "Mf" "Mfplat" "mfuuid" "strmiids") # FFmpeg dependencies
-	set(LIBS ${LIBS} "d3d11.lib" "$<$<CONFIG:Debug>:d3dcompiler.lib>$<$<CONFIG:RelWithDebInfo>:d3dcompiler.lib>") # Direct3D 11
+	set(LIBS ${LIBS} "d3d11.lib" "dxgi.lib" "$<$<CONFIG:Debug>:d3dcompiler.lib>$<$<CONFIG:RelWithDebInfo>:d3dcompiler.lib>") # Direct3D 11
 	set(APPICON_RC "${CMAKE_SOURCE_DIR}/Asset/Icons/appicon.rc")
 	set(CMAKE_MFC_FLAG 1)
 	set_property(GLOBAL PROPERTY USE_FOLDERS ON)

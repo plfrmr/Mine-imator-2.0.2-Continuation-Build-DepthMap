@@ -8,6 +8,7 @@ uniform sampler2D uMaterialBuffer;
 
 uniform float uNormalBufferScale;
 uniform int uIndirect;
+uniform float uFullRes;
 
 uniform vec2 uScreenSize;
 uniform float uSampleIndex;
@@ -43,7 +44,7 @@ void main()
 	vec3 originMat = (uIndirect > 0 ? vec3(0.0) : texture2D(uMaterialBuffer, vTexCoord).rgb);
 	
 	float pixel = (floor(vTexCoord.x * uScreenSize.x) + floor(vTexCoord.y * uScreenSize.y)) + uSampleIndex;
-	bool halfResCast = (mod(pixel, 2.0) == 0.0);
+	bool halfResCast = (uFullRes > 0.5 || mod(pixel, 2.0) == 0.0);
 	if (!halfResCast && (originMat.b > 0.001 || uIndirect > 0))
 	{
 		vec4 sampleColor = vec4(0.0);

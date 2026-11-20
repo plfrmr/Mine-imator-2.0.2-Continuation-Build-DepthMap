@@ -16,7 +16,7 @@ function render_startup()
 	globalvar render_effects, render_effects_done, render_effects_list, render_effects_progress, render_camera_bloom, render_camera_dof,
 			  render_glow, render_glow_falloff, render_camera_ca, render_camera_distort, render_camera_color_correction, render_camera_grain,
 			  render_camera_vignette, render_overlay, render_camera_lens_dirt, render_camera_lens_dirt_bloom, render_camera_lens_dirt_glow,
-			  render_ssao, render_shadows, render_indirect, render_reflections, render_quality, render_pass,
+			  render_ssao, render_shadows, render_indirect, render_reflections, render_quality, render_raytraced, render_pass,
 			  render_tonemapper, render_exposure, render_gamma, render_depth_normals;
 	
 	globalvar render_matrix, render_samples, render_sample_current, render_samples_done, render_target_size;
@@ -61,6 +61,12 @@ function render_startup()
 	render_effects_list = ds_list_create()
 	render_effects_progress = 0
 	render_quality = e_view_mode.FLAT
+	render_raytraced = false
+	
+	// Graphics card preference (read by the C++ runtime when creating the device)
+	globalvar render_gpu_startup, render_gpu_preferred;
+	render_gpu_startup = gpu_adapter_get_preferred()
+	render_gpu_preferred = render_gpu_startup
 	
 	render_camera_bloom = false
 	render_camera_dof = false

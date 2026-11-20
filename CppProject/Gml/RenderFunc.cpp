@@ -11,6 +11,8 @@
 #include "Render/PrimitiveRenderer.hpp"
 #include "Render/VertexBufferRenderer.hpp"
 
+#include <QFile>
+
 namespace CppProject
 {
 	IntType gpu_get_blendmode()
@@ -719,5 +721,38 @@ namespace CppProject
 	void update_frustum()
 	{
 		GFX->UpdateFrustum();
+	}
+
+	IntType gpu_adapter_count()
+	{
+		return GFX->gpuAdapterNames.size();
+	}
+
+	StringType gpu_adapter_get_name(IntType index)
+	{
+		if (index < 0 || index >= GFX->gpuAdapterNames.size())
+			return "";
+		return GFX->gpuAdapterNames[index];
+	}
+
+	StringType gpu_adapter_get_current()
+	{
+		return GFX->gpuAdapterCurrent;
+	}
+
+	StringType gpu_adapter_get_preferred()
+	{
+		return GraphicsApiHandler::GpuReadPreference();
+	}
+
+	void gpu_adapter_set_preferred(StringType name)
+	{
+		QFile file(GraphicsApiHandler::GpuPreferenceFile());
+		if (!file.open(QFile::WriteOnly | QFile::Truncate))
+		{
+			WARNING("Could not save graphics card preference: " + file.errorString());
+			return;
+		}
+		file.write(((QString)name).toUtf8());
 	}
 }

@@ -3,7 +3,15 @@
 function tab_properties_render()
 {
 	var text;
-	
+
+	// Graphics card (an app setting stored outside the project, applied when Mine-imator starts)
+	tab_control_menu()
+	draw_button_menu("rendergpu", e_menu.LIST, dx, dy, dw, 24, render_gpu_preferred, gpu_adapter_display_name(render_gpu_preferred), action_setting_render_gpu)
+	tab_next()
+
+	if (render_gpu_preferred != render_gpu_startup)
+		draw_tooltip_label("rendergpurestart", icons.INFO, e_toast.INFO)
+
 	// Render setings
 	if (project_render_settings = "")
 		text = text_get("projectrendersettingscustom")
@@ -362,6 +370,90 @@ function tab_properties_render()
 		tab_collapse_end()
 	}
 	
+	// Raytracing (settings for the Raytraced view mode and raytraced exports)
+	var rtbadge = text_get("renderraytracingbadge");
+
+	tab_control_switch()
+	draw_button_collapse("raytracing", collapse_map[?"raytracing"], null, true, "renderraytracing", "renderraytracingtip", rtbadge, "fire")
+	tab_next()
+
+	if (collapse_map[?"raytracing"])
+	{
+		tab_collapse_start()
+
+		// Samples
+		tab_control_dragger()
+		draw_dragger("renderrtsamples", dx, dy, dragger_width, project_render_rt_samples, .5, 1, 4096, 128, 1, tab.render.tbx_rt_samples, action_project_render_rt_samples, null, true, false, "renderrtsamplestip", rtbadge, "fire_small")
+		tab_next()
+
+		// Ray precision
+		tab_control_meter()
+		draw_meter("renderrtprecision", dx, dy, dw, round(project_render_rt_precision * 100), 0, 100, 80, 1, tab.render.tbx_rt_precision, action_project_render_rt_precision, "renderrtprecisiontip", rtbadge, "fire_small")
+		tab_next()
+
+		// Max ray steps
+		tab_control_dragger()
+		draw_dragger("renderrtsteps", dx, dy, dragger_width, project_render_rt_steps, 2, 16, 4096, 512, 1, tab.render.tbx_rt_steps, action_project_render_rt_steps, null, true, false, "renderrtstepstip", rtbadge, "fire_small")
+		tab_next()
+
+		// Ray distance
+		tab_control_dragger()
+		draw_dragger("renderrtdistance", dx, dy, dragger_width, project_render_rt_distance, max(1, project_render_rt_distance / 100), 16, no_limit, 5000, 1, tab.render.tbx_rt_distance, action_project_render_rt_distance, null, true, false, "renderrtdistancetip", rtbadge, "fire_small")
+		tab_next()
+
+		// Ray thickness
+		tab_control_dragger()
+		draw_dragger("renderrtthickness", dx, dy, dragger_width, round(project_render_rt_thickness * 100), .5, 1, 1000, 100, 1, tab.render.tbx_rt_thickness, action_project_render_rt_thickness, null, true, false, "renderrtthicknesstip", rtbadge, "fire_small")
+		tab_next()
+
+		// Full resolution rays
+		tab_control_switch()
+		draw_switch("renderrtfullres", dx, dy, project_render_rt_full_res, action_project_render_rt_full_res, "renderrtfullrestip", false, rtbadge, "fire_small")
+		tab_next()
+
+		// Global illumination
+		tab_control_switch()
+		draw_button_collapse("rt_indirect", collapse_map[?"rt_indirect"], action_project_render_rt_indirect, project_render_rt_indirect, "renderrtindirect", "renderrtindirecttip", rtbadge, "fire")
+		tab_next()
+
+		if (project_render_rt_indirect && collapse_map[?"rt_indirect"])
+		{
+			tab_collapse_start()
+
+			tab_control_dragger()
+			draw_dragger("renderrtindirectstrength", dx, dy, dragger_width, round(project_render_rt_indirect_strength * 100), .5, 0, no_limit * 100, 100, 1, tab.render.tbx_rt_indirect_strength, action_project_render_rt_indirect_strength, null, true, false, "", rtbadge, "fire_small")
+			tab_next()
+
+			tab_control_meter()
+			draw_meter("renderrtskylight", dx, dy, dw, round(project_render_rt_sky_light * 100), 0, 200, 50, 1, tab.render.tbx_rt_sky_light, action_project_render_rt_sky_light, "renderrtskylighttip", rtbadge, "fire_small")
+			tab_next()
+
+			tab_control_meter()
+			draw_meter("renderrtdenoise", dx, dy, dw, round(project_render_rt_denoise * 100), 0, 500, 100, 1, tab.render.tbx_rt_denoise, action_project_render_rt_denoise, "renderrtdenoisetip", rtbadge, "fire_small")
+			tab_next()
+
+			tab_collapse_end(false)
+		}
+
+		// Reflections
+		tab_control_switch()
+		draw_button_collapse("rt_reflections", collapse_map[?"rt_reflections"], action_project_render_rt_reflections, project_render_rt_reflections, "renderrtreflections", "renderrtreflectionstip", rtbadge, "fire")
+		tab_next()
+
+		if (project_render_rt_reflections && collapse_map[?"rt_reflections"])
+		{
+			tab_collapse_start()
+
+			tab_control_meter()
+			draw_meter("renderrtreflectionsfade", dx, dy, dw, round(project_render_rt_reflections_fade * 100), 0, 100, 50, 1, tab.render.tbx_rt_reflections_fade, action_project_render_rt_reflections_fade, "renderrtreflectionsfadetip", rtbadge, "fire_small")
+			tab_next()
+
+			tab_collapse_end(false)
+		}
+
+		tab_collapse_end()
+	}
+
 	// Default emissive
 	tab_control_dragger()
 	draw_dragger("renderdefaultemissive", dx, dy, dragger_width, round(project_render_block_emissive * 100), 1, 0, no_limit, 100, 1, tab.render.tbx_block_emissive, action_project_render_block_emissive, null, true, false, "renderdefaultemissivetip")

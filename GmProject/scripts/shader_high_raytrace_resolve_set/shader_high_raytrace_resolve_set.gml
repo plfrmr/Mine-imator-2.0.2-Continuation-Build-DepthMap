@@ -15,4 +15,5 @@ function shader_high_raytrace_resolve_set(indirect = false)
 	render_set_uniform("uNormalBufferScale", is_cpp() ? normal_buffer_scale : 1)
 	render_set_uniform_vec2("uScreenSize", render_width, render_height)
 	render_set_uniform_int("uIndirect", bool_to_float(indirect))
+	render_set_uniform("uFullRes", (render_raytraced && app.project_render_rt_full_res) ? 1 : 0)
 }

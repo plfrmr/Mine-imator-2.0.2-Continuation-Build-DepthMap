@@ -1,4 +1,4 @@
-/// draw_meter(name, x, y, width, value, min, max, default, snap, textbox, script, [tip])
+/// draw_meter(name, x, y, width, value, min, max, default, snap, textbox, script, [tip, [badge, [badgestyle]]])
 /// @arg name
 /// @arg x
 /// @arg y
@@ -10,9 +10,11 @@
 /// @arg snap
 /// @arg textbox
 /// @arg script
-/// @arg [tip]
+/// @arg [tip
+/// @arg [badge
+/// @arg [badgestyle]]]
 
-function draw_meter(name, xx, yy, wid, value, minval, maxval, def, snapval, tbx, script, tip = "")
+function draw_meter(name, xx, yy, wid, value, minval, maxval, def, snapval, tbx, script, tip = "", badge = "", badgestyle = "")
 {
 	var hei, thumbhei, linex, linewid, trackx, trackwid, dragval, dragx, dragy, mouseon, slidermouseon, locked, inputfocus;
 	thumbhei = 20
@@ -56,11 +58,17 @@ function draw_meter(name, xx, yy, wid, value, minval, maxval, def, snapval, tbx,
 	
 	draw_set_font(font_label)
 	
-	var labelshort = string_limit(text_get(name), dw - draggerwid);
+	var badgew = (badge != "" ? badge_width(badge, badgestyle) + 6 : 0);
+	var labelshort = string_limit(text_get(name), dw - draggerwid - badgew - (tip != "" ? 24 : 0));
 	draw_label(labelshort, xx, yy + ui_small_height/2, fa_left, fa_middle, labelcolor, labelalpha)
-	
-	if (string_width(labelshort) < dw)
-		draw_help_circle(tip, xx + string_width(labelshort) + 4, yy + 2, false)
+
+	var labelw = string_width(labelshort);
+
+	if (badge != "")
+		labelw += 6 + draw_badge(badge, xx + labelw + 6, yy + ui_small_height/2, false, badgestyle)
+
+	if (labelw + 24 <= dw - draggerwid)
+		draw_help_circle(tip, xx + labelw + 4, yy + 2, false)
 	
 	if (app.panel_compact || window_compact)
 		return 0

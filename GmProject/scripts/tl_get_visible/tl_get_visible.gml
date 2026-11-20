@@ -10,26 +10,26 @@ function tl_get_visible()
 	
 	if (render_active = "image")
 	{
-		if (app.popup_exportimage.high_quality && hq_hiding)
+		if ((app.popup_exportimage.high_quality || app.popup_exportimage.raytraced) && hq_hiding)
 			return false
-		
-		if (!app.popup_exportimage.high_quality && lq_hiding)
+
+		if (!(app.popup_exportimage.high_quality || app.popup_exportimage.raytraced) && lq_hiding)
 			return false
 	}
 	else if (render_active = "movie")
 	{
-		if (app.exportmovie_high_quality && hq_hiding)
+		if ((app.exportmovie_high_quality || app.exportmovie_raytraced) && hq_hiding)
 			return false
-		
-		if (!app.exportmovie_high_quality && lq_hiding)
+
+		if (!(app.exportmovie_high_quality || app.exportmovie_raytraced) && lq_hiding)
 			return false
 	}
 	else if (render_view_current != null)
 	{
-		if (render_view_current.quality = e_view_mode.RENDER && hq_hiding)
+		if (view_quality_high(render_view_current.quality) && hq_hiding)
 			return false
-		
-		if (render_view_current.quality != e_view_mode.RENDER && lq_hiding)
+
+		if (!view_quality_high(render_view_current.quality) && lq_hiding)
 			return false
 	}
 	

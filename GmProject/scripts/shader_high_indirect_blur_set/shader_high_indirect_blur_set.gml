@@ -15,5 +15,5 @@ function shader_high_indirect_blur_set()
 	render_set_uniform("uNoiseSize", render_sample_noise_size)
 	render_set_uniform_vec2("uScreenSize", render_width, render_height)
 	render_set_uniform("uSamples", render_samples)
-	render_set_uniform("uBlurSize", app.project_render_indirect_blur_radius)
+	render_set_uniform("uBlurSize", render_raytraced ? app.project_render_rt_denoise : app.project_render_indirect_blur_radius)
 }

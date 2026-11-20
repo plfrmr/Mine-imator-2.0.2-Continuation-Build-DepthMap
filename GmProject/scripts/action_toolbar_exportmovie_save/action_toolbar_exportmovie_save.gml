@@ -20,6 +20,7 @@ function action_toolbar_exportmovie_save()
 	exportmovie_format = popup_exportmovie.format
 	exportmovie_framespersecond = popup_exportmovie.framespersecond
 	exportmovie_high_quality = popup_exportmovie.high_quality
+	exportmovie_raytraced = popup_exportmovie.raytraced
 	exportmovie_current_sound = null
 	
 	if (timeline_region_start != null)
@@ -138,10 +139,10 @@ function action_toolbar_exportmovie_save()
 	exportmovie_start = current_time
 	render_samples = -1
 	
-	if (view_main.quality = e_view_mode.RENDER)
+	if (view_quality_high(view_main.quality))
 		view_main.quality = e_view_mode.SHADED
 	
-	if (view_second.quality = e_view_mode.RENDER)
+	if (view_quality_high(view_second.quality))
 		view_second.quality = e_view_mode.SHADED
 	
 	timeline_marker = exportmovie_marker_start

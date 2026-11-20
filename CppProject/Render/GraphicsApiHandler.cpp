@@ -8,8 +8,12 @@
 #include "PrimitiveRenderer.hpp"
 #include "VertexBufferRenderer.hpp"
 
+#include <QCoreApplication>
+#include <QFile>
+
 #if API_D3D11
 #include <comdef.h>
+#include <dxgi1_6.h>
 #else
 #include <QOpenGLDebugLogger>
 #endif
@@ -18,7 +22,69 @@ namespace CppProject
 {
 	GraphicsApiHandler* GraphicsApiHandler::handler = nullptr;
 
+	QString GraphicsApiHandler::GpuPreferenceFile()
+	{
+		return QCoreApplication::applicationDirPath() + "/Data/gpu.midata";
+	}
+
+	QString GraphicsApiHandler::GpuReadPreference()
+	{
+		QFile file(GpuPreferenceFile());
+		if (!file.open(QFile::ReadOnly))
+			return "";
+		return QString::fromUtf8(file.readAll()).trimmed();
+	}
+
 #if API_D3D11
+	// Lists the hardware graphics cards and returns the one matching the user's preference (or nullptr for the system default).
+	static IDXGIAdapter1* GpuFindPreferredAdapter(QStringList& names)
+	{
+		IDXGIFactory1* factory = nullptr;
+		if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&factory)))
+			return nullptr;
+
+		QString preference = GraphicsApiHandler::GpuReadPreference();
+		IDXGIAdapter1* chosen = nullptr;
+
+		IDXGIAdapter1* adapter = nullptr;
+		for (UINT i = 0; factory->EnumAdapters1(i, &adapter) != DXGI_ERROR_NOT_FOUND; i++)
+		{
+			DXGI_ADAPTER_DESC1 desc;
+			adapter->GetDesc1(&desc);
+			QString name = QString::fromStdWString(desc.Description);
+
+			// Skip software renderers ("Microsoft Basic Render Driver" is vendor 0x1414, device 0x8C)
+			if ((desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) || (desc.VendorId == 0x1414 && desc.DeviceId == 0x8C))
+			{
+				adapter->Release();
+				continue;
+			}
+
+			names.append(name);
+			DEBUG("Found graphics card: " + name);
+
+			if (!chosen && preference != "" && preference != "highperformance" && name == preference)
+				chosen = adapter;
+			else
+				adapter->Release();
+		}
+
+		if (preference == "highperformance")
+		{
+			IDXGIFactory6* factory6 = nullptr;
+			if (SUCCEEDED(factory->QueryInterface(__uuidof(IDXGIFactory6), (void**)&factory6)))
+			{
+				factory6->EnumAdapterByGpuPreference(0, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter1), (void**)&chosen);
+				factory6->Release();
+			}
+		}
+		else if (preference != "" && !chosen)
+			WARNING("Preferred graphics card not found: " + preference);
+
+		factory->Release();
+		return chosen;
+	}
+
 	GraphicsApiHandler::GraphicsApiHandler()
 	{
 		handler = this;
@@ -33,13 +99,33 @@ namespace CppProject
 		creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
 	#endif
 
-		D3DCheckError(D3D11CreateDevice(
-			0, D3D_DRIVER_TYPE_HARDWARE,
-			0, creationFlags,
-			featureLevels, ARRAYSIZE(featureLevels),
-			D3D11_SDK_VERSION, &d3dDevice,
-			0, &d3dContext
-		));
+		// Use the preferred graphics card if one is set, fall back to the system default
+		bool created = false;
+		if (IDXGIAdapter1* preferred = GpuFindPreferredAdapter(gpuAdapterNames))
+		{
+			created = SUCCEEDED(D3D11CreateDevice(
+				preferred, D3D_DRIVER_TYPE_UNKNOWN,
+				0, creationFlags,
+				featureLevels, ARRAYSIZE(featureLevels),
+				D3D11_SDK_VERSION, &d3dDevice,
+				0, &d3dContext
+			));
+			preferred->Release();
+
+			if (!created)
+				WARNING("Could not use the preferred graphics card, using the system default");
+		}
+
+		if (!created)
+		{
+			D3DCheckError(D3D11CreateDevice(
+				0, D3D_DRIVER_TYPE_HARDWARE,
+				0, creationFlags,
+				featureLevels, ARRAYSIZE(featureLevels),
+				D3D11_SDK_VERSION, &d3dDevice,
+				0, &d3dContext
+			));
+		}
 
 		// Enable debugger
 	#if DEBUG_MODE
@@ -67,7 +153,8 @@ namespace CppProject
 		dxgiDevice->Release();
 		DXGI_ADAPTER_DESC adapterDesc;
 		dxgiAdapter->GetDesc(&adapterDesc);
-		DEBUG("Graphics device: " + QString::fromStdWString(adapterDesc.Description));
+		gpuAdapterCurrent = QString::fromStdWString(adapterDesc.Description);
+		DEBUG("Graphics device: " + gpuAdapterCurrent);
 		D3DCheckError(dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory));
 		dxgiAdapter->Release();
 

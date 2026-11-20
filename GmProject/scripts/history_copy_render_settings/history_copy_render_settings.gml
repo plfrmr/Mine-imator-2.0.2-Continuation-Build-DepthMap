@@ -57,5 +57,18 @@ function history_copy_render_settings(obj)
 	project_render_depth_map_near = obj.project_render_depth_map_near
 	project_render_depth_map_far = obj.project_render_depth_map_far
 	project_render_depth_map_curve = obj.project_render_depth_map_curve
+	
+	project_render_rt_samples = obj.project_render_rt_samples
+	project_render_rt_precision = obj.project_render_rt_precision
+	project_render_rt_steps = obj.project_render_rt_steps
+	project_render_rt_distance = obj.project_render_rt_distance
+	project_render_rt_thickness = obj.project_render_rt_thickness
+	project_render_rt_full_res = obj.project_render_rt_full_res
+	project_render_rt_indirect = obj.project_render_rt_indirect
+	project_render_rt_indirect_strength = obj.project_render_rt_indirect_strength
+	project_render_rt_sky_light = obj.project_render_rt_sky_light
+	project_render_rt_denoise = obj.project_render_rt_denoise
+	project_render_rt_reflections = obj.project_render_rt_reflections
+	project_render_rt_reflections_fade = obj.project_render_rt_reflections_fade
 	project_render_depth_map_near_white = obj.project_render_depth_map_near_white
 }
