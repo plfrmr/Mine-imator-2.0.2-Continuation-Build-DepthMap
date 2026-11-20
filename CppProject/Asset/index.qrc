@@ -147,6 +147,8 @@
 		<file>Shaders/shader_draw_texture.vsh</file>
 		<file>Shaders/shader_high_bloom_threshold.fsh</file>
 		<file>Shaders/shader_high_bloom_threshold.vsh</file>
+		<file>Shaders/shader_high_depth_map.fsh</file>
+		<file>Shaders/shader_high_depth_map.vsh</file>
 		<file>Shaders/shader_high_depth_normal.fsh</file>
 		<file>Shaders/shader_high_depth_normal.vsh</file>
 		<file>Shaders/shader_high_dof.fsh</file>
