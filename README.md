@@ -1,9 +1,9 @@
-# Mine-imator with depth map rendering
+# Mine-imator with some new features
 
 > [!WARNING]
 > This fork of Mine-imator was made PURELY by an LLM, aside from the original Mine-imator code
 
-This fork adds black and white depth map rendering to Mine-imator as shown in the picture below.
+This fork adds black and white depth map rendering to Mine-imator as shown in the picture below and maybe some other features if I'm unemployed enough to ask Claude to make them.
 <img width="286" height="412" alt="image" src="https://github.com/user-attachments/assets/cf51af78-5e5d-445e-947d-c5c2f88cfa1e" />
 
 I'm sorry if I disappointed you with the information that this is vibe coded. I know that feeling. If you're someone that actually knows how to code and you want to unslopify this, be my guest.
