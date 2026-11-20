@@ -12,5 +12,6 @@ function shader_high_depth_map_set(depthbuffer)
 	
 	render_set_uniform("uMapNear", app.project_render_depth_map_near)
 	render_set_uniform("uMapFar", app.project_render_depth_map_far)
+	render_set_uniform("uCurve", app.project_render_depth_map_curve)
 	render_set_uniform_int("uNearWhite", app.project_render_depth_map_near_white)
 }

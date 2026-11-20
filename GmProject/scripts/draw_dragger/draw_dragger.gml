@@ -1,4 +1,4 @@
-/// draw_dragger(name, x, y, width, value, multiplier, min, max, default, snap, textbox, script, [captionwidth, [showcaption, [disabled, [tip]]]])
+/// draw_dragger(name, x, y, width, value, multiplier, min, max, default, snap, textbox, script, [captionwidth, [showcaption, [disabled, [tip, [badge]]]]])
 /// @arg name
 /// @arg x
 /// @arg y
@@ -14,25 +14,28 @@
 /// @arg [captionwidth
 /// @arg [showcaption
 /// @arg [disabled
-/// @arg [tip]]]]
+/// @arg [tip
+/// @arg [badge]]]]]
 
-function draw_dragger(name, xx, yy, wid, value, mul, minval, maxval, def, snapval, tbx, script, capwidth = null, showcaption = true, disabled = false, tip = "")
+function draw_dragger(name, xx, yy, wid, value, mul, minval, maxval, def, snapval, tbx, script, capwidth = null, showcaption = true, disabled = false, tip = "", badge = "")
 {
-	var caption, hei, fieldx, dragmouseon;
-	
+	var caption, hei, fieldx, dragmouseon, badgew;
+
 	hei = ui_small_height
-	
+
 	if (capwidth = null && showcaption)
 		capwidth = dw - wid
 	else if (!showcaption)
 		capwidth = 0
-	
+
+	badgew = (badge != "" ? badge_width(badge) + 6 : 0)
+
 	draw_set_font(font_label)
-	
+
 	if (capwidth > 0)
-		caption = string_limit(text_get(name), min(capwidth, dw - wid))
+		caption = string_limit(text_get(name), min(capwidth, dw - wid) - badgew)
 	else
-		caption = string_limit(text_get(name), dw - wid)
+		caption = string_limit(text_get(name), dw - wid - badgew)
 	
 	if (xx + wid + capwidth < content_x || xx > content_x + content_width || yy + hei < content_y || yy > content_y + content_height)
 	{
@@ -141,9 +144,14 @@ function draw_dragger(name, xx, yy, wid, value, mul, minval, maxval, def, snapva
 	if (showcaption)
 	{
 		draw_label(caption, xx, yy + hei/2, fa_left, fa_middle, labelcolor, labelalpha, font_label)
-		
-		if (xx + string_width(caption) + 28 < fieldx)
-			draw_help_circle(tip, xx + string_width(caption) + 4, yy + (hei/2) - 10, disabled)
+
+		var labelw = string_width(caption);
+
+		if (badge != "")
+			labelw += 6 + draw_badge(badge, xx + labelw + 6, yy + hei/2, disabled)
+
+		if (xx + labelw + 28 < fieldx)
+			draw_help_circle(tip, xx + labelw + 4, yy + (hei/2) - 10, disabled)
 	}
 	
 	// Idle

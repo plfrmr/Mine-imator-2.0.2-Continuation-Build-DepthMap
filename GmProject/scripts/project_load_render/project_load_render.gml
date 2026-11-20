@@ -56,6 +56,7 @@ function project_load_render(map)
 	
 	project_render_depth_map_near = value_get_real(map[?"depth_map_near"], project_render_depth_map_near)
 	project_render_depth_map_far = value_get_real(map[?"depth_map_far"], project_render_depth_map_far)
+	project_render_depth_map_curve = value_get_real(map[?"depth_map_curve"], project_render_depth_map_curve)
 	project_render_depth_map_near_white = value_get_real(map[?"depth_map_near_white"], project_render_depth_map_near_white)
 	
 	project_render_texture_filtering = value_get_real(map[?"texture_filtering"], project_render_texture_filtering)

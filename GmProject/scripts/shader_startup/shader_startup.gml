@@ -457,6 +457,7 @@ function shader_startup()
 		new_shader_uniform("uFar")
 		new_shader_uniform("uMapNear")
 		new_shader_uniform("uMapFar")
+		new_shader_uniform("uCurve")
 		new_shader_uniform("uNearWhite")
 	}
 	
