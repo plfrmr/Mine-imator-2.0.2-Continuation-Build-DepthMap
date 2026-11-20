@@ -31,6 +31,7 @@ function render_high_passes()
 		// World
 		render_world_start()
 		render_world_sky()
+
 		render_world(e_render_mode.COLOR)
 		render_world_done()
 		
@@ -75,7 +76,17 @@ function render_high_passes()
 	{
 		draw_clear(c_black)
 		render_world_start()
+
+		// Record the scene for hardware ray tracing (the material pass binds the color, material and normal maps)
+		var rtcapture = (render_rt_hw && (render_sample_current = 0 || rt_capture_needed()));
+		if (rtcapture)
+			rt_capture_begin()
+
 		render_world(e_render_mode.MATERIAL)
+
+		if (rtcapture)
+			rt_capture_end()
+
 		render_world_done()
 	}
 	surface_reset_target()

@@ -27,7 +27,7 @@ function shader_high_lighting_apply_set(shadows, mask, material)
 	render_set_uniform("uIndirectEnabled", render_indirect)
 	render_set_uniform("uIndirectStrength", app.project_render_indirect_strength)
 	
-	render_set_uniform("uReflectionsEnabled", render_reflections)
+	render_set_uniform("uReflectionsEnabled", render_reflections || render_rt_reflections)
 	render_set_uniform_color("uFallbackColor", app.background_sky_color_final, 1)
 	render_set_uniform("uGamma", render_gamma)
 }

@@ -28,7 +28,18 @@ function render_start()
 	render_glow = project_render_glow && (render_quality = e_view_mode.RENDER)
 	render_glow_falloff = project_render_glow && project_render_glow_falloff && (render_quality = e_view_mode.RENDER)
 	
-	render_depth_normals = (render_ssao || render_indirect || render_reflections || project_render_subsurface_samples >= 0 || render_pass = e_render_pass.DEPTH_MAP)
+	// Hardware ray tracing (RT cores) traces shadows, bounced light and reflections instead of the screen-space effects
+	render_rt_hw = (render_raytraced && project_render_rt_hardware && rt_supported())
+	render_rt_reflections = (render_rt_hw && render_reflections)
+
+	if (render_rt_hw)
+	{
+		render_reflections = false
+		render_indirect = false
+		render_ssao = false
+	}
+
+	render_depth_normals = (render_rt_hw || render_ssao || render_indirect || render_reflections || project_render_subsurface_samples >= 0 || render_pass = e_render_pass.DEPTH_MAP)
 	
 	// Use camera settings
 	if (render_camera != null)

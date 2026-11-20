@@ -21,6 +21,23 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 	
 	if (!res_is_ready(res[2]))
 		res[2] = mc_res
+
+	// Material and normal maps left on default use the maps of the texture's resource pack (if it has them),
+	// so picking a PBR pack as the texture is enough. Choosing a material or normal map resource still overrides this.
+	if (app.project_render_pbr_pack_maps && res[0] != mc_res && (res[1] = mc_res || res[2] = mc_res))
+	{
+		var resmat, resnorm;
+		resmat = res[1]
+		resnorm = res[2]
+
+		if (resmat = mc_res && res[0].block_sheet_texture_material != null)
+			resmat = res[0]
+
+		if (resnorm = mc_res && res[0].block_sheet_tex_normal != null)
+			resnorm = res[0]
+
+		res = [res[0], resmat, resnorm]
+	}
 	
 	var tex, texprev, texani;
 	var texmat, texmatprev, texanimat, texanimatsheet;

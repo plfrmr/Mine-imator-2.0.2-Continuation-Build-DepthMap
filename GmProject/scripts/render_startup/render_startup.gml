@@ -16,7 +16,7 @@ function render_startup()
 	globalvar render_effects, render_effects_done, render_effects_list, render_effects_progress, render_camera_bloom, render_camera_dof,
 			  render_glow, render_glow_falloff, render_camera_ca, render_camera_distort, render_camera_color_correction, render_camera_grain,
 			  render_camera_vignette, render_overlay, render_camera_lens_dirt, render_camera_lens_dirt_bloom, render_camera_lens_dirt_glow,
-			  render_ssao, render_shadows, render_indirect, render_reflections, render_quality, render_raytraced, render_pass,
+			  render_ssao, render_shadows, render_indirect, render_reflections, render_quality, render_raytraced, render_rt_hw, render_rt_reflections, render_pass,
 			  render_tonemapper, render_exposure, render_gamma, render_depth_normals;
 	
 	globalvar render_matrix, render_samples, render_sample_current, render_samples_done, render_target_size;
@@ -26,7 +26,7 @@ function render_startup()
 	// Update shader_reset_uniforms()
 	globalvar shader_uniform_color_ext, shader_uniform_rgb_add, shader_uniform_rgb_sub, shader_uniform_hsb_add,
 			  shader_uniform_hsb_sub, shader_uniform_hsb_mul, shader_uniform_mix_color, shader_uniform_mix_percent,
-			  shader_uniform_emissive, shader_uniform_metallic, shader_uniform_roughness, shader_uniform_wind,
+			  shader_uniform_emissive, shader_uniform_metallic, shader_uniform_roughness, shader_uniform_reflectiveness, shader_uniform_wind,
 			  shader_uniform_wind_terrain, shader_uniform_fog, shader_uniform_sss, shader_uniform_sss_red,
 			  shader_uniform_sss_green, shader_uniform_sss_blue, shader_uniform_sss_color, shader_uniform_glow, shader_uniform_glow_texture,
 			  shader_uniform_glow_color, shader_uniform_wind_strength;
@@ -62,6 +62,8 @@ function render_startup()
 	render_effects_progress = 0
 	render_quality = e_view_mode.FLAT
 	render_raytraced = false
+	render_rt_hw = false
+	render_rt_reflections = false
 	
 	// Graphics card preference (read by the C++ runtime when creating the device)
 	globalvar render_gpu_startup, render_gpu_preferred;

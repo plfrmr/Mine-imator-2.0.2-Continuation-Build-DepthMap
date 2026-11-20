@@ -34,12 +34,15 @@ function render_high()
 		// Create render passes
 		render_high_passes()
 		
+		// Hardware ray tracing replaces the shadow, bounced light and reflection passes
+		var traced = (render_rt_hw && render_high_raytrace());
+
 		// Shadows
-		if (render_shadows)
+		if (render_shadows && !traced)
 			render_high_shadows()
-		
+
 		// Indirect lighting
-		if (render_indirect)
+		if (render_indirect && !traced)
 			render_high_indirect()
 		
 		// SSAO

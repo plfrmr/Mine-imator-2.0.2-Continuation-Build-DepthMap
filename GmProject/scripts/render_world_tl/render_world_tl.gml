@@ -33,6 +33,9 @@ function render_world_tl()
 		 render_mode = e_render_mode.HIGH_LIGHT_POINT_DEPTH))
 		return 0
 	
+	// Hardware ray tracing: objects with shadows turned off don't block light
+	rt_capture_shadows(shadows)
+	
 	// Click mode
 	if (render_mode = e_render_mode.CLICK)
 	{
@@ -132,6 +135,12 @@ function render_world_tl()
 	{
 		shader_uniform_roughness = value_inherit[e_value.ROUGHNESS]
 		render_set_uniform("uRoughness", shader_uniform_roughness)
+	}
+	
+	if (value_inherit[e_value.REFLECTIVENESS] != shader_uniform_reflectiveness)
+	{
+		shader_uniform_reflectiveness = value_inherit[e_value.REFLECTIVENESS]
+		render_set_uniform("uReflectiveness", shader_uniform_reflectiveness)
 	}
 	
 	if (wind != shader_uniform_wind)

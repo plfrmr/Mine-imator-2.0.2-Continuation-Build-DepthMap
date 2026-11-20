@@ -89,6 +89,12 @@ function render_world_model_part(part, res, texnamemap, shapevbuffermap, colorna
 					shader_uniform_roughness = value_inherit[e_value.ROUGHNESS]
 					render_set_uniform("uRoughness", shader_uniform_roughness)
 				}
+				
+				if (value_inherit[e_value.REFLECTIVENESS] != shader_uniform_reflectiveness)
+				{
+					shader_uniform_reflectiveness = value_inherit[e_value.REFLECTIVENESS]
+					render_set_uniform("uReflectiveness", shader_uniform_reflectiveness)
+				}
 			}
 			else
 			{

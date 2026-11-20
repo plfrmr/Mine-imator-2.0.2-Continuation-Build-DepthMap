@@ -18,7 +18,13 @@ function shader_use()
 	render_set_uniform("uSampleIndex", render_sample_current)
 	render_set_uniform_int("uAlphaHash", render_alpha_hash)
 	
-	render_set_uniform_int("uUseNormalMap", dev_mode_skip_tangents ? 0 : 1)
+	render_set_uniform_int("uUseNormalMap", (dev_mode_skip_tangents || !app.project_render_pbr_normal_maps) ? 0 : 1)
+	
+	// PBR render settings
+	render_set_uniform("uNormalStrength", app.project_render_pbr_normal_strength)
+	render_set_uniform("uPBRRoughness", app.project_render_pbr_roughness)
+	render_set_uniform("uPBRMetallic", app.project_render_pbr_metallic)
+	render_set_uniform("uPBRReflectivity", app.project_render_pbr_reflectivity)
 	
 	// Set wind
 	if (!is_undefined(uniform_map[?"uTime"]) && uniform_map[?"uTime"] > -1)

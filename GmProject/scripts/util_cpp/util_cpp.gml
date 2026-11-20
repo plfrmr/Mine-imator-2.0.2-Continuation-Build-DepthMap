@@ -451,3 +451,105 @@ function gpu_adapter_get_preferred()
 function gpu_adapter_set_preferred(name)
 {
 }
+
+/// CppSeparate BoolType rt_supported()
+/// Returns whether hardware ray tracing (DXR 1.1 on the RT cores) is available.
+function rt_supported()
+{
+	return false
+}
+
+/// CppSeparate StringType rt_status()
+/// Returns the graphics card used for hardware ray tracing, or why it isn't available.
+function rt_status()
+{
+	return "Hardware ray tracing requires the C++ runtime"
+}
+
+/// CppSeparate void rt_capture_begin()
+/// Starts recording submitted objects as the ray tracing scene.
+function rt_capture_begin()
+{
+}
+
+/// CppSeparate void rt_capture_end()
+/// Stops recording, the recorded objects become the ray tracing scene.
+function rt_capture_end()
+{
+}
+
+/// CppSeparate void rt_capture_pause(BoolType)
+/// Temporarily excludes submitted objects from the ray tracing scene.
+function rt_capture_pause(pause)
+{
+}
+
+/// CppSeparate void rt_capture_shadows(BoolType)
+/// Whether the next captured objects block light (cast shadows) in ray tracing.
+function rt_capture_shadows(castshadows)
+{
+}
+
+/// CppSeparate BoolType rt_capture_needed()
+/// Returns whether the ray tracing scene must be recorded again.
+function rt_capture_needed()
+{
+	return true
+}
+
+/// CppSeparate void rt_set_camera(ArrType, ArrType, RealType, RealType, RealType, RealType, RealType)
+/// Sets the inverse view and projection matrices, depth range and position of the camera.
+function rt_set_camera(viewinv, projinv, znear, zfar, camx, camy, camz)
+{
+}
+
+/// CppSeparate void rt_light_clear()
+function rt_light_clear()
+{
+}
+
+/// CppSeparate void rt_light_add(IntType, RealType, RealType, RealType, RealType, RealType, RealType, RealType, RealType, RealType, RealType, RealType, RealType, RealType, RealType, RealType, RealType, BoolType)
+/// Adds a light (0 = sun, 1 = point, 2 = spot) with its position, direction, color, strength, range, fade size, size, spot angle, spot sharpness, specular strength and whether it casts shadows.
+function rt_light_add(type, xx, yy, zz, dx, dy, dz, r, g, b, strength, range, fadesize, size, spotfov, spotsharpness, specular, castshadows)
+{
+}
+
+/// CppSeparate void rt_set_param(StringType, RealType)
+/// Sets a ray tracing setting by name.
+function rt_set_param(name, value)
+{
+}
+
+/// CppSeparate BoolType rt_trace(IntType, IntType, IntType, IntType, IntType, IntType, IntType, IntType)
+/// Traces the scene for the G-buffer surfaces (depth, normal, diffuse, material, emissive) into the light and specular surfaces.
+function rt_trace(depth, normal, diffuse, material, emissive, light, specular, sampleindex)
+{
+	return false
+}
+
+/// CppSeparate BoolType rt_debug_changed()
+/// Developer debug view for hardware ray tracing (Data/rtdebug.txt), returns true when it changed.
+function rt_debug_changed()
+{
+	return false
+}
+
+/// CppSeparate StringType rt_debug_open_project()
+/// Developer: project to open in Raytraced mode on startup (Data/rtdebug_open.txt), or "".
+function rt_debug_open_project()
+{
+	return ""
+}
+
+/// CppSeparate StringType rt_debug_open_mode()
+/// Developer: view mode for rt_debug_open_project ("render" or "raytraced", default raytraced).
+function rt_debug_open_mode()
+{
+	return ""
+}
+
+/// CppSeparate void rt_free()
+/// Releases the ray tracing resources.
+function rt_free()
+{
+}

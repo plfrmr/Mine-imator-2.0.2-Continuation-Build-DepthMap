@@ -28,6 +28,7 @@ function tl_value_clamp(vid, val)
 		case e_value.MIX_PERCENT:
 		case e_value.METALLIC:
 		case e_value.ROUGHNESS:
+		case e_value.REFLECTIVENESS:
 		case e_value.SUBSURFACE_RADIUS_RED:
 		case e_value.SUBSURFACE_RADIUS_GREEN:
 		case e_value.SUBSURFACE_RADIUS_BLUE:

@@ -147,6 +147,11 @@ function tab_frame_editor_texture_material()
 		draw_meter("frameeditormetallic", dx, dy, dw, round(tl_edit.value[e_value.METALLIC] * 100), 0, 100, 0, 1, tab.material.tbx_metallic, action_tl_frame_metallic)
 		tab_next()
 		
+		// Reflectiveness
+		tab_control_meter()
+		draw_meter("frameeditorreflectiveness", dx, dy, dw, round(tl_edit.value[e_value.REFLECTIVENESS] * 100), 0, 100, 0, 1, tab.material.tbx_reflectiveness, action_tl_frame_reflectiveness, "frameeditorreflectivenesstip")
+		tab_next()
+		
 		// Emissive
 		tab_control_dragger()
 		draw_dragger("frameeditoremissive", dx, dy, dragger_width, round(tl_edit.value[e_value.EMISSIVE] * 100), .1, 0, no_limit, 0, 1, tab.material.tbx_emissive, action_tl_frame_emissive)

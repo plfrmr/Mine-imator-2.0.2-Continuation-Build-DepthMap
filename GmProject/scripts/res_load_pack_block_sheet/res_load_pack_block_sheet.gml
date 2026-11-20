@@ -121,12 +121,13 @@ function res_load_pack_block_sheet(type, suffix)
 				texwid = texture_width(tex)
 				scale = blocksize / texwid
 				
-				if (string_contains(mc_assets.block_texture_list[|t], " opaque"))
+				// Normal maps keep their alpha untouched, it holds the height map (LabPBR/SEUS) used by the depth map pass
+				if (type != "normal" && string_contains(mc_assets.block_texture_list[|t], " opaque"))
 					draw_box(dx, dy, blocksize, blocksize, false, c_black, 1)
-				
+
 				draw_texture_part(tex, dx, dy, 0, 0, texwid, texwid, scale, scale)
-				
-				if (type = "normal" || string_contains(mc_assets.block_texture_list[|t], " noalpha"))
+
+				if (type != "normal" && string_contains(mc_assets.block_texture_list[|t], " noalpha"))
 				{
 					gpu_set_blendmode_ext_sepalpha(bm_src_color, bm_one, bm_one, bm_one)
 					draw_texture_part(tex, dx, dy, 0, 0, texwid, texwid, scale, scale, c_black, 1)
@@ -209,7 +210,7 @@ function res_load_pack_block_sheet(type, suffix)
 		framefade = false
 		frametime = 1
 		framelist = null
-		opaque = string_contains(mc_assets.block_texture_ani_list[|t], " opaque")
+		opaque = (type != "normal" && string_contains(mc_assets.block_texture_ani_list[|t], " opaque")) // Normal maps keep their height (alpha)
 		
 		// Load JSON
 		fname = load_assets_dir + mc_textures_directory + mc_assets.block_texture_ani_list[|t] + suffix + ".png.mcmeta"

@@ -1,6 +1,7 @@
 #include "Mesh.hpp"
 #include "Vertex.hpp"
 #include "World/World.hpp"
+#include "Render/RayTracer.hpp"
 
 namespace CppProject
 {
@@ -36,6 +37,9 @@ namespace CppProject
 
 		D3D11_SUBRESOURCE_DATA iBufferData = { indexData.Data(), 0, 0 };
 		D3DCheckError(D3DDevice->CreateBuffer(&iBufferDesc, &iBufferData, &d3dIndexBuffer));
+
+		static uint64_t nextUid = 0;
+		uid = ++nextUid;
 	#else
 		glVertexBuffer = new QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
 		glVertexBuffer->create();
@@ -69,6 +73,12 @@ namespace CppProject
 	template<typename V> void Mesh<V>::FreeBuffers(BoolType freeCpuData)
 	{
 	#if API_D3D11
+		if (uid)
+		{
+			RayTracer::ForgetMesh(uid);
+			uid = 0;
+		}
+
 		releaseAndReset(d3dVertexBuffer);
 		releaseAndReset(d3dIndexBuffer);
 	#else

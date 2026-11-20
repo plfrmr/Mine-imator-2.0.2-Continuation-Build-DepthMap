@@ -15,6 +15,13 @@ function shader_material_uniforms()
 	// Surface
 	new_shader_uniform("uRoughness")
 	new_shader_uniform("uMetallic")
+	new_shader_uniform("uReflectiveness")
+	
+	// PBR render settings
+	new_shader_uniform("uNormalStrength")
+	new_shader_uniform("uPBRRoughness")
+	new_shader_uniform("uPBRMetallic")
+	new_shader_uniform("uPBRReflectivity")
 	new_shader_uniform("uEmissive")
 	
 	// Subsurface

@@ -57,6 +57,8 @@ function history_copy_render_settings(obj)
 	project_render_depth_map_near = obj.project_render_depth_map_near
 	project_render_depth_map_far = obj.project_render_depth_map_far
 	project_render_depth_map_curve = obj.project_render_depth_map_curve
+	project_render_depth_map_normal_detail = obj.project_render_depth_map_normal_detail
+	project_render_depth_map_detail_depth = obj.project_render_depth_map_detail_depth
 	
 	project_render_rt_samples = obj.project_render_rt_samples
 	project_render_rt_precision = obj.project_render_rt_precision
@@ -70,5 +72,30 @@ function history_copy_render_settings(obj)
 	project_render_rt_denoise = obj.project_render_rt_denoise
 	project_render_rt_reflections = obj.project_render_rt_reflections
 	project_render_rt_reflections_fade = obj.project_render_rt_reflections_fade
+	project_render_rt_hardware = obj.project_render_rt_hardware
+	project_render_rt_bounces = obj.project_render_rt_bounces
+	project_render_rt_reflection_bounces = obj.project_render_rt_reflection_bounces
+	project_render_rt_ray_offset = obj.project_render_rt_ray_offset
+	project_render_rt_alpha_cutout = obj.project_render_rt_alpha_cutout
+	project_render_rt_shadows = obj.project_render_rt_shadows
+	project_render_rt_sun_softness = obj.project_render_rt_sun_softness
+	project_render_rt_light_softness = obj.project_render_rt_light_softness
+	project_render_rt_ambient = obj.project_render_rt_ambient
+	project_render_rt_emissive = obj.project_render_rt_emissive
+	project_render_rt_bounce_lights = obj.project_render_rt_bounce_lights
+	project_render_rt_reflection_strength = obj.project_render_rt_reflection_strength
+	project_render_rt_roughness_cutoff = obj.project_render_rt_roughness_cutoff
+	project_render_rt_specular = obj.project_render_rt_specular
+	project_render_rt_tinted_shadows = obj.project_render_rt_tinted_shadows
+	project_render_rt_tint_strength = obj.project_render_rt_tint_strength
+	project_render_rt_bounce_saturation = obj.project_render_rt_bounce_saturation
+	project_render_pbr_normal_maps = obj.project_render_pbr_normal_maps
+	project_render_pbr_normal_strength = obj.project_render_pbr_normal_strength
+	project_render_pbr_pack_maps = obj.project_render_pbr_pack_maps
+	project_render_pbr_roughness = obj.project_render_pbr_roughness
+	project_render_pbr_metallic = obj.project_render_pbr_metallic
+	project_render_pbr_reflectivity = obj.project_render_pbr_reflectivity
+	project_render_pbr_texture_ao = obj.project_render_pbr_texture_ao
+	project_render_pbr_ao_strength = obj.project_render_pbr_ao_strength
 	project_render_depth_map_near_white = obj.project_render_depth_map_near_white
 }
