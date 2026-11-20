@@ -92,6 +92,9 @@ function render_high_passes()
 	if (render_pass = e_render_pass.DEPTH_U24)
 		render_pass_surf = surface_duplicate(render_surface_depth)
 	
+	if (render_pass = e_render_pass.DEPTH_MAP)
+		render_pass_surf = render_high_depth_map(render_surface_depth)
+	
 	if (render_pass = e_render_pass.NORMAL)
 		render_pass_surf = surface_duplicate(render_surface_normal)
 }

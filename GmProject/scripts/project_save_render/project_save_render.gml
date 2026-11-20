@@ -53,6 +53,10 @@ function project_save_render()
 		json_save_var("glint_speed", project_render_glint_speed)
 		json_save_var("glint_strength", project_render_glint_strength)
 		
+		json_save_var("depth_map_near", project_render_depth_map_near)
+		json_save_var("depth_map_far", project_render_depth_map_far)
+		json_save_var_bool("depth_map_near_white", project_render_depth_map_near_white)
+		
 		json_save_var_bool("texture_filtering", project_render_texture_filtering)
 		json_save_var_bool("transparent_block_texture_filtering", project_render_transparent_block_texture_filtering)
 		json_save_var("texture_filtering_level", project_render_texture_filtering_level)

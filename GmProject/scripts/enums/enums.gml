@@ -1085,6 +1085,7 @@ function enums()
 		INDIRECT_SHADOWS,
 		REFLECTIONS,
 		DEPTH_U24,
+		DEPTH_MAP,
 		NORMAL,
 		MATERIAL,
 		amount
