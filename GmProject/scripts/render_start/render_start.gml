@@ -115,6 +115,17 @@ function render_start()
 	}
 	
 	render_ratio = render_width / render_height
+
+	// HDR10 export (render_hdr): tone map up to the display peak, and keep post effects and samples in float surfaces
+	render_hdr_headroom = max(1, project_render_hdr_peak / max(1, project_render_hdr_paper_white))
+	if (render_hdr)
+		render_hdr_scale = hdr_tonemap_scale(render_tonemapper, render_hdr_headroom)
+
+	if (render_active != null || !string_contains(window_state, "export"))
+		render_hdr_surfaces(render_hdr)
+
+	// The tone mapper input always needs the full range (it stayed 8-bit when no earlier pass created it, e.g. Raytraced mode)
+	render_surface_hdr[0] = surface_set_hdr(render_surface_hdr[0], true, true)
 	render_overlay = (render_camera_colors || render_watermark)
 	
 	// Effects must be in the order they're done in rendering

@@ -59,6 +59,8 @@ function project_load_render(map)
 	project_render_depth_map_curve = value_get_real(map[?"depth_map_curve"], project_render_depth_map_curve)
 	project_render_depth_map_normal_detail = value_get_real(map[?"depth_map_normal_detail"], project_render_depth_map_normal_detail)
 	project_render_depth_map_detail_depth = value_get_real(map[?"depth_map_detail_depth"], project_render_depth_map_detail_depth)
+	project_render_hdr_peak = value_get_real(map[?"hdr_peak"], project_render_hdr_peak)
+	project_render_hdr_paper_white = value_get_real(map[?"hdr_paper_white"], project_render_hdr_paper_white)
 	
 	project_render_rt_samples = value_get_real(map[?"rt_samples"], project_render_rt_samples)
 	project_render_rt_precision = value_get_real(map[?"rt_precision"], project_render_rt_precision)

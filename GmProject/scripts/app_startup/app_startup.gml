@@ -3,7 +3,12 @@
 function app_startup()
 {
 	startup_error = true
-	
+
+	// Developer: export requested in Data/rtdebug_open.txt (set when the project opens, see rt_debug_export_start)
+	rt_debug_export = ""
+	rt_debug_export_file = ""
+	rt_debug_export_time = 0
+
 	if (!lib_startup())
 		return false
 	

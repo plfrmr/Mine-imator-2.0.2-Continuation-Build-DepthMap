@@ -6,6 +6,10 @@ uniform int uTonemapper;
 uniform float uExposure;
 uniform float uGamma;
 
+// HDR10 export: peak / paper white (0 = normal SDR output) and the input scale that keeps mid gray like SDR
+uniform float uHDRHeadroom;
+uniform float uHDRScale;
+
 /// ACES (implementation by Stephen Hill, @self_shadow)
 vec3 RRTAndODTFit(vec3 v)
 {
@@ -45,7 +49,20 @@ void main()
 	color.rgb *= uExposure;
 	
 	// Tone map
-	if (uTonemapper == 1)
+	if (uHDRHeadroom > 1.0)
+	{
+		// Same curve shape, but it reaches the display peak instead of white
+		if (uTonemapper == 0)
+			color.rgb = min(color.rgb, vec3(uHDRHeadroom));
+		else
+		{
+			vec3 v = color.rgb * (uHDRScale / uHDRHeadroom);
+			v = (uTonemapper == 1) ? v / (1.0 + v) : mapACES(v);
+			color.rgb = v * uHDRHeadroom;
+		}
+		color.rgb = max(color.rgb, vec3(0.0));
+	}
+	else if (uTonemapper == 1)
 		color.rgb /= (1.0 + color.rgb); // Reinhard
 	else if (uTonemapper == 2)
 		color.rgb = mapACES(color.rgb); // ACES
@@ -53,5 +70,5 @@ void main()
 	// Gamma
 	color.rgb = pow(color.rgb, vec3(1.0/uGamma));
 	
-	gl_FragColor = mix(baseColor, color, texture2D(uMask, vTexCoord).r);
+	gl_FragColor = mix(baseColor, color, clamp(texture2D(uMask, vTexCoord).r, 0.0, 1.0));
 }

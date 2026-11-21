@@ -670,6 +670,9 @@
 			"highquality": "High quality rendering",
 			"raytraced": "Raytraced rendering",
 			"raytracedtip": "Renders the movie with the Raytracing settings from the Render tab (raytraced lighting and reflections). Slower than high quality rendering.",
+			"hdr10": "HDR10",
+			"hdr10tip": "Saves the movie in HDR10 (10-bit H.264, PQ, Rec.2020) so bright highlights can go above white on HDR screens. Uses the HDR10 settings from the Render tab. Image sequences are saved as 16-bit HDR PNGs.",
+			"hdr10wmv": "WMV can't store HDR, choose MP4 or MOV.",
 			"watermark": "Show watermark",
 			"save": "Save"
 		},
@@ -687,6 +690,8 @@
 			"watermark": "Show watermark",
 			"raytraced": "Raytraced rendering",
 			"raytracedtip": "Renders the image with the Raytracing settings from the Render tab (raytraced lighting and reflections). Slower than high quality rendering.",
+			"hdr10": "HDR10",
+			"hdr10tip": "Saves a 16-bit HDR10 PNG (PQ, Rec.2020) so bright highlights can go above white on HDR screens. Uses the HDR10 settings from the Render tab.",
 			"save": "Save",
 			"cancel": "Cancel"
 		}
@@ -3080,6 +3085,13 @@
 		"depthmapcurvetip": "Depth map pass: shapes the gradient between near and far. 1 is linear, higher values darken the middle distances and lower values brighten them.",
 		"depthmapnearwhite": "Near is white",
 		"depthmapnormaldetail": "Normal map detail",
+		"hdr": "HDR10",
+		"hdrtip": "Settings for HDR10 image and movie exports (the HDR10 switch when rendering). Highlights keep going up to the peak brightness instead of stopping at white.",
+		"hdrbadge": "HDR10",
+		"hdrpeak": "Peak brightness",
+		"hdrpeaktip": "Brightest highlight in nits (cd/m²). Match the HDR screens you're making it for, 1000 is common.",
+		"hdrpaperwhite": "Paper white",
+		"hdrpaperwhitetip": "How bright normal white is in nits. 203 is the HDR standard, higher makes the whole image brighter.",
 		"depthmapdetaildepth": "Detail depth",
 		"gpu": "Graphics card",
 		"gpudefault": "System default",

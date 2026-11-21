@@ -347,6 +347,12 @@ namespace CppProject
 
 	IntType block_get_render_model(VarType object, RealType emissive, BoolType offset, BoolType offsetXY)
 	{
+		if (!instance_exists(object) || !instance_exists(global::mc_builder))
+		{
+			WARNING("block_get_render_model: missing model object " + NumStr((IntType)object.ToInt()) + " (builder " + NumStr((IntType)global::mc_builder) + ")");
+			return 0;
+		}
+
 		const ArrType& models = idVar(object, model).Arr();
 		obj_block_render_model* model = nullptr;
 		BoolType randBlocks = idVar(global::mc_builder, build_randomize);

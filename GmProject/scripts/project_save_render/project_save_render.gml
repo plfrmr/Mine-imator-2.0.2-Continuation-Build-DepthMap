@@ -58,6 +58,8 @@ function project_save_render()
 		json_save_var("depth_map_curve", project_render_depth_map_curve)
 		json_save_var_bool("depth_map_normal_detail", project_render_depth_map_normal_detail)
 		json_save_var("depth_map_detail_depth", project_render_depth_map_detail_depth)
+		json_save_var("hdr_peak", project_render_hdr_peak)
+		json_save_var("hdr_paper_white", project_render_hdr_paper_white)
 		
 		json_save_var("rt_samples", project_render_rt_samples)
 		json_save_var("rt_precision", project_render_rt_precision)

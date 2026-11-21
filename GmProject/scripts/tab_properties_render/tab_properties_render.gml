@@ -386,6 +386,30 @@ function tab_properties_render()
 tab_collapse_end()
 	}
 	
+	// HDR10 (settings for HDR10 image/movie exports)
+	var hdrbadge = text_get("renderhdrbadge");
+
+	tab_control_switch()
+	draw_button_collapse("hdr", collapse_map[?"hdr"], null, true, "renderhdr", "renderhdrtip", hdrbadge, "hdr")
+	tab_next()
+
+	if (collapse_map[?"hdr"])
+	{
+		tab_collapse_start()
+
+		// Peak brightness
+		tab_control_dragger()
+		draw_dragger("renderhdrpeak", dx, dy, dragger_width, project_render_hdr_peak, 10, 100, 10000, 1000, 1, tab.render.tbx_hdr_peak, action_project_render_hdr_peak, null, true, false, "renderhdrpeaktip", hdrbadge, "hdr")
+		tab_next()
+
+		// Paper white
+		tab_control_dragger()
+		draw_dragger("renderhdrpaperwhite", dx, dy, dragger_width, project_render_hdr_paper_white, 1, 80, 1000, 203, 1, tab.render.tbx_hdr_paper_white, action_project_render_hdr_paper_white, null, true, false, "renderhdrpaperwhitetip", hdrbadge, "hdr")
+		tab_next()
+
+		tab_collapse_end()
+	}
+
 	// Raytracing (settings for the Raytraced view mode and raytraced exports)
 	var rtbadge = text_get("renderraytracingbadge");
 	

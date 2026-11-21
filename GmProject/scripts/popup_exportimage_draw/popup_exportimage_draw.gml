@@ -52,6 +52,11 @@ function popup_exportimage_draw()
 	draw_switch("exportimageraytraced", dx, dy, popup.raytraced, action_toolbar_exportimage_raytraced, "exportimageraytracedtip", false, text_get("renderraytracingbadge"), "fire")
 	tab_next()
 	
+	// HDR10
+	tab_control_switch()
+	draw_switch("exportimagehdr10", dx, dy, popup.hdr10, action_toolbar_exportimage_hdr10, "exportimagehdr10tip", false, text_get("renderhdrbadge"), "hdr")
+	tab_next()
+	
 	// Watermark
 	tab_control_checkbox()
 	draw_checkbox("exportimagewatermark", dx, dy, popup.watermark, action_toolbar_exportimage_watermark)

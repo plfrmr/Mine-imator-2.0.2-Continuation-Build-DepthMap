@@ -91,6 +91,8 @@ function app_startup_interface_tabs()
 			tbx_depth_map_far = new_textbox_decimals()
 			tbx_depth_map_curve = new_textbox_decimals()
 			tbx_depth_map_detail_depth = new_textbox_decimals()
+			tbx_hdr_peak = new_textbox_integer()
+			tbx_hdr_paper_white = new_textbox_integer()
 			
 			tbx_rt_samples = new_textbox_decimals()
 			tbx_rt_precision = new_textbox_decimals()

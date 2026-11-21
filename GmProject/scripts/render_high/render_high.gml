@@ -26,6 +26,10 @@ function render_high()
 	for (var s = samplestart; s < sampleend; s++)
 	{
 		render_sample_current = s
+		
+		// HDR10 export: the scratch surfaces hold data for the scene passes, which relies on 8-bit clamping
+		if (render_hdr)
+			render_hdr_scratch_surfaces(false)
 		random_set_seed(render_sample_current)
 		
 		// Update TAA jitter
@@ -58,6 +62,10 @@ function render_high()
 			render_high_reflections(finalsurf)
 		
 		finalsurf = render_high_tonemap(finalsurf)
+		
+		// HDR10 export: after tone mapping they hold colors, which can go above white
+		if (render_hdr)
+			render_hdr_scratch_surfaces(true)
 		
 		// Minecraft fog
 		if (background_fog_show)

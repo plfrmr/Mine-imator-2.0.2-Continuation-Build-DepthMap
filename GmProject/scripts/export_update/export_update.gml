@@ -18,7 +18,7 @@ function export_update()
 				export_done_movie()
 			else if (window_state = "export_image")
 			{
-				surface_save_lib(export_surface, export_filename)
+				export_save_image(export_surface, export_filename)
 				export_done_image()
 			}
 			
@@ -65,6 +65,9 @@ function export_update()
 		render_quality = ((popup_exportimage.high_quality || render_raytraced) ? e_view_mode.RENDER : e_view_mode.SHADED)
 	}
 	
+	// HDR10 exports tone map up to the display peak (only the high quality renderer tone maps)
+	render_hdr = (export_hdr10 && render_quality = e_view_mode.RENDER && is_cpp())
+	
 	if (window_state = "export_movie" && exportmovie_format = "png")
 		render_start(export_surface, timeline_camera)
 	else
@@ -79,6 +82,7 @@ function export_update()
 	}
 	
 	export_surface = render_done()
+	render_hdr = false
 	
 	export_sample++
 	
@@ -102,7 +106,7 @@ function export_update()
 			var totallen = string_length(string(totalframes));
 			var numstr = string(exportmovie_frame + 1);
 			numstr = string_repeat("0", (totallen - string_length(numstr))) + numstr
-			surface_save_lib(export_surface, filename_new_ext(export_filename, "") + "_" + numstr + ".png")
+			export_save_image(export_surface, filename_new_ext(export_filename, "") + "_" + numstr + ".png")
 		}
 		else
 		{
@@ -131,7 +135,7 @@ function export_update()
 	// Save image
 	if (window_state = "export_image")
 	{
-		surface_save_lib(export_surface, export_filename)
+		export_save_image(export_surface, export_filename)
 		export_done_image()
 		window_flash()
 		window_beep()

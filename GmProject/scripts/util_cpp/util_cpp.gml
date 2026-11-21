@@ -548,6 +548,32 @@ function rt_debug_open_mode()
 	return ""
 }
 
+/// CppSeparate BoolType surface_is_hdr(IntType)
+/// Returns whether a surface stores floating point (HDR) colors.
+function surface_is_hdr(surf)
+{
+	return false
+}
+
+/// CppSeparate void surface_save_hdr10(IntType, StringType, RealType, RealType)
+/// Saves a surface as an HDR10 PNG (16-bit, PQ, Rec.2020) from display gamma encoded colors where 1 = paper white (nits), clipped to the peak (nits).
+function surface_save_hdr10(surf, fn, paperwhite, peak)
+{
+	surface_save(surf, fn)
+}
+
+/// CppSeparate void surface_debug_stats(IntType, StringType)
+/// Developer: logs the min/max of each channel of a surface.
+function surface_debug_stats(surf, label)
+{
+}
+
+/// CppSeparate void movie_set_hdr(BoolType, RealType, RealType)
+/// Makes the next movie_start encode HDR10 (10-bit H.264, PQ, Rec.2020) when the format uses H.264 (MP4, MOV).
+function movie_set_hdr(enable, paperwhite, peak)
+{
+}
+
 /// CppSeparate void rt_free()
 /// Releases the ray tracing resources.
 function rt_free()

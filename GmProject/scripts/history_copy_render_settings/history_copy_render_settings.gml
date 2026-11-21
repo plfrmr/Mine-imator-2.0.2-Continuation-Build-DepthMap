@@ -59,6 +59,8 @@ function history_copy_render_settings(obj)
 	project_render_depth_map_curve = obj.project_render_depth_map_curve
 	project_render_depth_map_normal_detail = obj.project_render_depth_map_normal_detail
 	project_render_depth_map_detail_depth = obj.project_render_depth_map_detail_depth
+	project_render_hdr_peak = obj.project_render_hdr_peak
+	project_render_hdr_paper_white = obj.project_render_hdr_paper_white
 	
 	project_render_rt_samples = obj.project_render_rt_samples
 	project_render_rt_precision = obj.project_render_rt_precision

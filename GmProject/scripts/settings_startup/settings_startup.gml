@@ -112,12 +112,14 @@ function settings_startup()
 	setting_export_movie_include_hidden = false
 	setting_export_movie_high_quality = true
 	setting_export_movie_raytraced = false
+	setting_export_movie_hdr10 = false
 	setting_export_movie_watermark = trial_version
 	
 	setting_export_image_remove_background = false
 	setting_export_image_include_hidden = false
 	setting_export_image_high_quality = true
 	setting_export_image_raytraced = false
+	setting_export_image_hdr10 = false
 	setting_export_image_watermark = trial_version
 	
 	project_render_pass = e_render_pass.COMBINED

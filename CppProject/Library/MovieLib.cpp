@@ -3,6 +3,7 @@
 #include "Asset/Sound.hpp"
 #include "Asset/Surface.hpp"
 #include "AppHandler.hpp"
+#include "Render/Hdr10.hpp"
 
 extern "C"
 {
@@ -37,6 +38,17 @@ namespace CppProject
 	IntType videoFrameNum;
 	SwsContext* videoSwsContext;
 	uchar* videoFrameData = nullptr;
+
+	// HDR10 (requested with movie_set_hdr, active when the format's encoder is H.264)
+	BoolType movieHdr = false, videoHdrActive = false;
+	Hdr10::Settings movieHdrSettings;
+
+	void movie_set_hdr(BoolType enable, RealType paperWhite, RealType peak)
+	{
+		movieHdr = enable;
+		movieHdrSettings.paperWhite = (float)std::max(1.0, paperWhite);
+		movieHdrSettings.peak = (float)std::clamp(peak, 100.0, 10000.0);
+	}
 
 	// Audio
 	BoolType audioEnabled;
@@ -287,9 +299,31 @@ namespace CppProject
 			if (outContext->oformat->flags & AVFMT_GLOBALHEADER)
 				videoCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
+			// HDR10: 10-bit 4:2:0, PQ transfer, Rec.2020 primaries and matrix
+			videoHdrActive = (movieHdr && videoCodec->id == AV_CODEC_ID_H264);
+			if (movieHdr && !videoHdrActive)
+				WARNING("HDR10 needs an H.264 format (MP4 or MOV), saving in SDR");
+
+			if (videoHdrActive)
+			{
+				videoCodecContext->pix_fmt = AV_PIX_FMT_YUV420P10LE;
+				videoCodecContext->color_primaries = AVCOL_PRI_BT2020;
+				videoCodecContext->color_trc = AVCOL_TRC_SMPTE2084;
+				videoCodecContext->colorspace = AVCOL_SPC_BT2020_NCL;
+				videoCodecContext->color_range = AVCOL_RANGE_MPEG;
+			}
+
 			// Open the codec
 			AVDictionary* opt = NULL;
 			av_dict_set(&opt, "tune", "zerolatency", 0);
+			if (videoHdrActive)
+			{
+				std::string params = "colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc:"
+									 "mastering-display=G(8500,39850)B(6550,2300)R(35400,14600)WP(15635,16450)L(" +
+									 std::to_string((long long)(movieHdrSettings.peak * 10000.f)) + ",50)";
+				av_dict_set(&opt, "profile", "high10", 0);
+				av_dict_set(&opt, "x264-params", params.c_str(), 0);
+			}
 			if (avcodec_open2(videoCodecContext, videoCodec, &opt) < 0)
 				throw "avcodec_open2 failed";
 
@@ -441,10 +475,19 @@ namespace CppProject
 				throw "av_frame_get_buffer failed";
 
 			// Convert surface into frame
-			FindSurface(global::_app->export_surface)->frameBuffer->CopyColorData(videoFrameData);
-			uint8_t* inData[1] = { videoFrameData }; // RGBA have one plane
-			int inLinesize[1] = { 4 * (int)videoWidth }; // RGBA stride
-			sws_scale(videoSwsContext, inData, inLinesize, 0, videoHeight, videoFrame->data, videoFrame->linesize);
+			Surface* surf = FindSurface(global::_app->export_surface);
+			if (!surf)
+				throw "export surface missing";
+
+			if (videoHdrActive)
+				Hdr10::ToYuv420p10(surf, movieHdrSettings, videoFrame->data, videoFrame->linesize);
+			else
+			{
+				surf->frameBuffer->CopyColorData(videoFrameData);
+				uint8_t* inData[1] = { videoFrameData }; // RGBA have one plane
+				int inLinesize[1] = { 4 * (int)videoWidth }; // RGBA stride
+				sws_scale(videoSwsContext, inData, inLinesize, 0, videoHeight, videoFrame->data, videoFrame->linesize);
+			}
 			
 			// Submit frame and encode
 			Encode(videoCodecContext, videoFrame, videoStream);

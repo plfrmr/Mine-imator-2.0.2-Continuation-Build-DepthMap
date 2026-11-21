@@ -9,6 +9,7 @@ function export_done_movie()
 	if (exportmovie_format != "png")
 	{
 		movie_done()
+		movie_set_hdr(false, 0, 0)
 		buffer_delete(exportmovie_buffer)
 	}
 	
@@ -21,6 +22,7 @@ function export_done_movie()
 	render_watermark = false
 	render_background = true
 	render_hidden = false
+	export_hdr10 = false
 	
 	timeline_marker = exportmovie_marker_previous
 	

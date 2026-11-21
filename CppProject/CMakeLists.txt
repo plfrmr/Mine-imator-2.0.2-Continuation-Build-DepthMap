@@ -189,6 +189,9 @@ if (WIN32)
 	target_include_directories(${PROJECT_NAME} PUBLIC ${RT_SHADER_DIR})
 endif()
 target_link_libraries(${PROJECT_NAME} ${LIBS})
+if (MSVC)
+	target_link_options(${PROJECT_NAME} PRIVATE "/MAP") # Mine-imator.map: looks up the stack offsets in fatal error logs
+endif()
 
 # Project file settings
 set_property(TARGET ${PROJECT_NAME} PROPERTY WIN32_EXECUTABLE "$<$<CONFIG:Debug>:0>$<$<CONFIG:Release>:1>")

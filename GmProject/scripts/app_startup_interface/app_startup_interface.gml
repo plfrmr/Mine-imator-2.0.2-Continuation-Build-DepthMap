@@ -25,7 +25,8 @@ function app_startup_interface()
 	
 	background_ground_startup()
 	background_sky_startup()
-		
+
+
 	// Start server request for new assets
 	http_assets = http_get(link_assets_versions)
 	
@@ -74,6 +75,15 @@ function app_startup_interface()
 			view_main.quality = ((rtmode = "render" || rtmode = "depthmap") ? e_view_mode.RENDER : e_view_mode.RAYTRACED)
 			if (rtmode = "depthmap")
 				project_render_pass = e_render_pass.DEPTH_MAP
+
+			// "hdrimage|file", "sdrimage|file", "hdrmovie|file": export once loading is done (rt_debug_export_start)
+			var bar = string_pos("|", rtmode);
+			if (bar > 0)
+			{
+				rt_debug_export = string_copy(rtmode, 1, bar - 1)
+				rt_debug_export_file = string_delete(rtmode, 1, bar)
+				rt_debug_export_time = current_time + 5000
+			}
 			window_state = ""
 		}
 	}

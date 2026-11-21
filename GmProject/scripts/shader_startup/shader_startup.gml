@@ -557,6 +557,8 @@ function shader_startup()
 		new_shader_uniform("uTonemapper")
 		new_shader_uniform("uExposure")
 		new_shader_uniform("uGamma")
+		new_shader_uniform("uHDRHeadroom")
+		new_shader_uniform("uHDRScale")
 	}
 	
 	with (shader_map[?shader_clip])

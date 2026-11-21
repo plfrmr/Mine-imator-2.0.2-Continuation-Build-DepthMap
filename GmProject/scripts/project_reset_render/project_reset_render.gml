@@ -66,6 +66,8 @@ function project_reset_render()
 	project_render_depth_map_curve = 1
 	project_render_depth_map_normal_detail = true
 	project_render_depth_map_detail_depth = 0.1
+	project_render_hdr_peak = 1000
+	project_render_hdr_paper_white = 203
 	
 	project_render_rt_samples = 128
 	project_render_rt_precision = 0.8

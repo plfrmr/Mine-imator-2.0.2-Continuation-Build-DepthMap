@@ -326,8 +326,9 @@ Surface FetchSurface(uint instanceId, uint primIndex, float2 bary, float3x4 obje
 			{
 				float3 T = normalize(tangent - dot(tangent, normal) * normal);
 				float3 B = cross(T, flipped ? -normal : normal);
-				float2 nxy = (nt.xy * 2.0 - 1.0) * uPBR.x;
+				float2 nxy = nt.xy * 2.0 - 1.0;
 				float nz = sqrt(max(0.0, 1.0 - dot(nxy, nxy)));
+				nxy *= uPBR.x; // Strength scales the slopes, normalized below
 				float3 mapped = normalize(T * nxy.x + B * -nxy.y + normal * nz);
 				if (dot(mapped, normal) > 0.0)
 					normal = mapped;
