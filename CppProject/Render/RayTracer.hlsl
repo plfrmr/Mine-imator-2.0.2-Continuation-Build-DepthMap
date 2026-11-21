@@ -130,6 +130,14 @@ float3 SampleCosineHemisphere(float3 n, inout uint seed)
 	return normalize(t * (cos(phi) * r) + b * (sin(phi) * r) + n * sqrt(max(0.0, 1.0 - r2)));
 }
 
+// Cosine sample around the shading normal, mirrored back above the face when it would go into the surface
+float3 SampleBounce(float3 n, float3 geo, inout uint seed)
+{
+	float3 dir = SampleCosineHemisphere(n, seed);
+	float d = dot(dir, geo);
+	return (d < 0.0) ? normalize(dir - 2.0 * d * geo) : dir;
+}
+
 float3 SampleCone(float3 dir, float angle, inout uint seed)
 {
 	if (angle <= 0.0)
@@ -246,6 +254,7 @@ struct Surface
 {
 	float3 pos;
 	float3 normal;
+	float3 geoNormal;	// Face normal (towards the ray), rays start above it: the shading normal can lie along the face (parallax sides)
 	float3 albedo;	// Linear
 	float alpha;
 	float emissive;
@@ -476,6 +485,8 @@ Surface FetchSurface(uint instanceId, uint primIndex, float2 bary, float3x4 obje
 	if (flipped) // Two-sided
 		normal = -normal;
 
+	float3 geoNormal = normal;
+
 	float2 uv = InterpolateUV(inst.meshIndex, idx, bary);
 	float4 color = UnpackVertexColor(c.x) * w.x + UnpackVertexColor(c.y) * w.y + UnpackVertexColor(c.z) * w.z;
 	float vertexEmissive = (((d.x >> 8) & 0xFF) * w.x + ((d.y >> 8) & 0xFF) * w.y + ((d.z >> 8) & 0xFF) * w.z) / 255.0;
@@ -558,6 +569,7 @@ Surface FetchSurface(uint instanceId, uint primIndex, float2 bary, float3x4 obje
 	Surface s;
 	s.pos = pos;
 	s.normal = normal;
+	s.geoNormal = geoNormal;
 	s.albedo = ToLinear(tex.rgb * color.rgb * inst.blendColor.rgb);
 	s.alpha = tex.a * color.a * inst.blendColor.a;
 	s.emissive = emissive;
@@ -688,11 +700,11 @@ float GeometrySmith(float NdotV, float NdotL, float roughness)
 
 // Light from the sun and placed lights with ray traced shadows. Returns diffuse light (same units as the light buffer),
 // optionally adds specular highlights for the given view direction and material.
-float3 DirectLight(float3 pos, float3 normal, Parallax pom, float3 viewDir, float roughness, float3 specTint, bool doSpecular,
+float3 DirectLight(float3 pos, float3 normal, float3 geoNormal, Parallax pom, float3 viewDir, float roughness, float3 specTint, bool doSpecular,
 				   inout uint seed, inout float3 specular)
 {
 	float3 result = float3(0.0, 0.0, 0.0);
-	float3 origin = pos + normal * uRay.y;
+	float3 origin = pos + geoNormal * uRay.y;
 	bool shadows = (uSize.w & FLAG_SHADOWS) != 0;
 
 	for (uint i = 0; i < uCounts.x; i++)
@@ -793,7 +805,7 @@ float3 TraceRadiance(float3 origin, float3 dir, uint bounces, inout uint seed)
 		if (lightsOnBounces)
 		{
 			float3 unusedSpec = float3(0.0, 0.0, 0.0);
-			light += DirectLight(s.pos, s.normal, s.pom, -dir, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
+			light += DirectLight(s.pos, s.normal, s.geoNormal, s.pom, -dir, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
 		}
 
 		float3 bounceColor = BounceColor(s.albedo);
@@ -803,8 +815,8 @@ float3 TraceRadiance(float3 origin, float3 dir, uint bounces, inout uint seed)
 		if (max(throughput.r, max(throughput.g, throughput.b)) < 0.01)
 			break;
 
-		origin = s.pos + s.normal * uRay.y;
-		dir = SampleCosineHemisphere(s.normal, seed);
+		origin = s.pos + s.geoNormal * uRay.y;
+		dir = SampleBounce(s.normal, s.geoNormal, seed);
 	}
 
 	return radiance;
@@ -846,6 +858,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	float debugNormalSource = 0.0; // 0 = no primary hit, 1 = geometry
 	float primaryAO = 1.0;
 	Parallax primaryPom = NoParallax();
+	float3 geoNormal = float3(0.0, 0.0, 1.0);
 	if (TraceClosest(uCamPos.xyz, primaryDir, 1000000.0, primary))
 	{
 		pos = primary.pos;
@@ -853,15 +866,19 @@ void main(uint3 id : SV_DispatchThreadID)
 		debugNormalSource = 1.0; // Includes the normal map, applied in FetchSurface
 		primaryAO = lerp(1.0, primary.ao, uPBR.z);
 		primaryPom = primary.pom;
+		geoNormal = primary.geoNormal;
 	}
 	else // Fall back to the G-buffer
 	{
 		pos = mul(uViewInv, float4(ViewPosFromDepth(uv, depth), 1.0)).xyz;
 		normal = GeometricNormal(int2(id.xy), pos);
+		geoNormal = normal;
 	}
 	float3 viewDir = normalize(uCamPos.xyz - pos);
 	if (dot(normal, viewDir) < 0.0)
 		normal = -normal;
+	if (dot(geoNormal, viewDir) < 0.0)
+		geoNormal = -geoNormal;
 
 	float4 material = gMaterial[id.xy]; // R = roughness, G = metallic, B = fresnel
 	float roughness = max(material.r, 0.02);
@@ -892,7 +909,7 @@ void main(uint3 id : SV_DispatchThreadID)
 				if (dot(normal, L) <= 0.0)
 					c = float3(0.0, 0.0, 1.0);
 				else
-					c = TraceOccluded(pos + normal * uRay.y, L, 100000.0) ? float3(1.0, 0.0, 0.0) : float3(0.0, 1.0, 0.0);
+					c = TraceOccluded(pos + geoNormal * uRay.y, L, 100000.0) ? float3(1.0, 0.0, 0.0) : float3(0.0, 1.0, 0.0);
 				break;
 			}
 		}
@@ -907,7 +924,7 @@ void main(uint3 id : SV_DispatchThreadID)
 				if ((uint)light.posType.w != LIGHT_SUN)
 					continue;
 				RayQuery<RAY_FLAG_NONE> q;
-				q.TraceRayInline(gScene, BaseRayFlags(), 0xFF, MakeRay(pos + normal * uRay.y, normalize(light.dirSpecular.xyz), 100000.0));
+				q.TraceRayInline(gScene, BaseRayFlags(), 0xFF, MakeRay(pos + geoNormal * uRay.y, normalize(light.dirSpecular.xyz), 100000.0));
 				while (q.Proceed())
 				{
 					if (q.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE &&
@@ -944,14 +961,14 @@ void main(uint3 id : SV_DispatchThreadID)
 
 	// Direct light
 	// Specular highlights are scaled by the surface's fresnel like in Render mode (rough non-metals barely shine)
-	float3 light = DirectLight(pos, normal, primaryPom, viewDir, roughness, specTint * fresnel, doSpecular && fresnel > 0.0, seed, specular);
+	float3 light = DirectLight(pos, normal, geoNormal, primaryPom, viewDir, roughness, specTint * fresnel, doSpecular && fresnel > 0.0, seed, specular);
 
 	// Light from the environment and bounced light. A ray that escapes to the sky brings the ambient/sky light (so corners and
 	// covered areas get darker), a ray that hits something brings back the light bouncing off it.
 	if ((uSize.w & FLAG_INDIRECT) && uCounts.y > 0)
 	{
-		float3 origin = pos + normal * uRay.y;
-		float3 dir = SampleCosineHemisphere(normal, seed);
+		float3 origin = pos + geoNormal * uRay.y;
+		float3 dir = SampleBounce(normal, geoNormal, seed);
 		Surface s;
 
 		if (!TraceClosest(origin, dir, uRay.x, s))
@@ -962,10 +979,10 @@ void main(uint3 id : SV_DispatchThreadID)
 			if (uSize.w & FLAG_BOUNCE_LIGHTS)
 			{
 				float3 unusedSpec = float3(0.0, 0.0, 0.0);
-				bounce += DirectLight(s.pos, s.normal, s.pom, -dir, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
+				bounce += DirectLight(s.pos, s.normal, s.geoNormal, s.pom, -dir, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
 			}
 			if (uCounts.y > 1)
-				bounce += TraceRadiance(s.pos + s.normal * uRay.y, SampleCosineHemisphere(s.normal, seed), uCounts.y - 1, seed);
+				bounce += TraceRadiance(s.pos + s.geoNormal * uRay.y, SampleBounce(s.normal, s.geoNormal, seed), uCounts.y - 1, seed);
 			light += BounceColor(s.albedo) * bounce * uStrengths.x * primaryAO;
 		}
 	}
@@ -978,18 +995,18 @@ void main(uint3 id : SV_DispatchThreadID)
 		float3 H = SampleGGX(normal, roughness, seed);
 		float3 R = reflect(-viewDir, H);
 
-		if (dot(R, normal) > 0.0)
+		if (dot(R, normal) > 0.0 && dot(R, geoNormal) > 0.0)
 		{
 			float3 reflected;
 			Surface s;
-			if (TraceClosest(pos + normal * uRay.y, R, uRay.x, s))
+			if (TraceClosest(pos + geoNormal * uRay.y, R, uRay.x, s))
 			{
 				float3 unusedSpec = float3(0.0, 0.0, 0.0);
 				float3 hitLight = EnvironmentLight() + s.emissive * uStrengths.y;
-				hitLight += DirectLight(s.pos, s.normal, s.pom, -R, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
+				hitLight += DirectLight(s.pos, s.normal, s.geoNormal, s.pom, -R, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
 
 				if ((uSize.w & FLAG_INDIRECT) && uCounts.z > 0)
-					hitLight += TraceRadiance(s.pos + s.normal * uRay.y, SampleCosineHemisphere(s.normal, seed), uCounts.z, seed) * uStrengths.x;
+					hitLight += TraceRadiance(s.pos + s.geoNormal * uRay.y, SampleBounce(s.normal, s.geoNormal, seed), uCounts.z, seed) * uStrengths.x;
 
 				reflected = s.albedo * hitLight;
 			}
