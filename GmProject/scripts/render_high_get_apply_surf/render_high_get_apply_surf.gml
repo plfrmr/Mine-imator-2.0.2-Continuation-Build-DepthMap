@@ -5,6 +5,14 @@ function render_high_get_apply_surf()
 {
 	render_post_index = !render_post_index
 	
+	// HDR10 export: float surfaces so highlights above white survive the post effects
+	if (render_hdr)
+	{
+		var index = 3 + render_post_index;
+		render_surface_hdr[index] = surface_require(render_surface_hdr[index], render_width, render_height, true, true)
+		return render_surface_hdr[index]
+	}
+	
 	// Cursed, but we're not using these surfaces anymore at this point in rendering.
 	if (render_post_index)
 	{

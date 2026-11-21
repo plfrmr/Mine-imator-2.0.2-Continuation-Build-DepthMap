@@ -227,11 +227,13 @@ function settings_load()
 			setting_export_movie_include_hidden = value_get_real(map[?"exportmovie_remove_background"], setting_export_movie_include_hidden)
 			setting_export_movie_high_quality = value_get_real(map[?"exportmovie_high_quality"], setting_export_movie_high_quality)
 			setting_export_movie_raytraced = value_get_real(map[?"exportmovie_raytraced"], setting_export_movie_raytraced)
+			setting_export_movie_hdr10 = value_get_real(map[?"exportmovie_hdr10"], setting_export_movie_hdr10)
 			setting_export_movie_watermark = value_get_real(map[?"exportmovie_watermark"], setting_export_movie_watermark)
 			setting_export_image_remove_background = value_get_real(map[?"exportimage_remove_background"], setting_export_image_remove_background)
 			setting_export_image_include_hidden = value_get_real(map[?"exportimage_include_hidden"], setting_export_image_include_hidden)
 			setting_export_image_high_quality = value_get_real(map[?"exportimage_high_quality"], setting_export_image_high_quality)
 			setting_export_image_raytraced = value_get_real(map[?"exportimage_raytraced"], setting_export_image_raytraced)
+			setting_export_image_hdr10 = value_get_real(map[?"exportimage_hdr10"], setting_export_image_hdr10)
 			setting_export_image_watermark = value_get_real(map[?"exportimage_watermark"], setting_export_image_watermark)
 		}
 		

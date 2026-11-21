@@ -54,8 +54,8 @@ vec3 getMappedNormal(vec2 uv)
 	vec4 n = texture2D(uTextureNormal, uv).rgba;
 	n.rgba = (n.a < 0.01 ? vec4(.5, .5, 0.0, 1.0) : n.rgba); // No normal?
 	n.xy = n.xy * 2.0 - 1.0; // Decode
-	n.xy *= uNormalStrength; // Normal strength setting
 	n.z = sqrt(max(0.0, 1.0 - dot(n.xy, n.xy))); // Get Z
+	n.xy *= uNormalStrength; // Normal strength setting: scales the slopes (normalized below), so higher is deeper
 	n.y *= -1.0; // Convert Y- to Y+
 	return normalize(vTBN * n.xyz);
 }

@@ -13,6 +13,7 @@ function export_done_image()
 	render_watermark = false
 	render_background = true
 	render_hidden = false
+	export_hdr10 = false
 	
 	var export_folder = string_delete(export_filename, string_last_pos("/", string_replace_all(export_filename, "\\", "/")), string_length(export_filename) - string_last_pos("/", string_replace_all(export_filename, "\\", "/")) + 1)
 

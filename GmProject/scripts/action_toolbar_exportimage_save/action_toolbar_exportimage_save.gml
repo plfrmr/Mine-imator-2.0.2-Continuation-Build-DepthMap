@@ -22,6 +22,8 @@ function action_toolbar_exportimage_save()
 	log("Watermark", yesno(render_watermark))
 	log("High Quality", yesno(popup_exportimage.high_quality))
 	log("Raytraced", yesno(popup_exportimage.raytraced))
+	log("HDR10", yesno(popup_exportimage.hdr10))
+	export_hdr10 = popup_exportimage.hdr10
 	log("Size", project_video_width, project_video_height)
 	
 	window_state = "export_image"

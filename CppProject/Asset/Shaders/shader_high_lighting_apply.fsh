@@ -23,7 +23,7 @@ float unpackEmissive(vec4 c)
 void main()
 {
 	vec4 baseColor = texture2D(gm_BaseTexture, vTexCoord);
-	float mask = texture2D(uMask, vTexCoord).r;
+	float mask = clamp(texture2D(uMask, vTexCoord).r, 0.0, 1.0); // Can exceed 1 in float (HDR10) surfaces
 	
 	// Apply gamma to base
 	baseColor.rgb = pow(baseColor.rgb, mix(vec3(1.0), vec3(uGamma), mask));

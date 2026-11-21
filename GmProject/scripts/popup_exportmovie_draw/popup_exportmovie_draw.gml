@@ -112,6 +112,14 @@ function popup_exportmovie_draw()
 	draw_switch("exportmovieraytraced", dx, dy, popup.raytraced, action_toolbar_exportmovie_raytraced, "exportmovieraytracedtip", false, text_get("renderraytracingbadge"), "fire")
 	tab_next()
 	
+	// HDR10
+	tab_control_switch()
+	draw_switch("exportmoviehdr10", dx, dy, popup.hdr10, action_toolbar_exportmovie_hdr10, "exportmoviehdr10tip", false, text_get("renderhdrbadge"), "hdr")
+	tab_next()
+	
+	if (popup.hdr10 && popup.format = "wmv")
+		draw_tooltip_label("exportmoviehdr10wmv", icons.WARNING_TRIANGLE, e_toast.WARNING)
+	
 	// Watermark
 	tab_control_checkbox()
 	draw_checkbox("exportmoviewatermark", dx, dy, popup.watermark, action_toolbar_exportmovie_watermark)

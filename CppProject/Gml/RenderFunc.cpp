@@ -9,6 +9,7 @@
 #include "Render/GLWidget.hpp"
 #include "Render/GraphicsApiHandler.hpp"
 #include "Render/RayTracer.hpp"
+#include "Render/Hdr10.hpp"
 #include "Render/PrimitiveRenderer.hpp"
 #include "Render/VertexBufferRenderer.hpp"
 
@@ -465,6 +466,50 @@ namespace CppProject
 		{
 			GFX->SubmitBatch();
 			surf->ToImage().save(filename);
+		}
+	}
+
+	void surface_debug_stats(IntType id, StringType label)
+	{
+		Surface* surf = FindSurface(id);
+		if (!surf)
+		{
+			Printer::Line("Surface stats " + (QString)label + ": missing surface " + NumStr(id));
+			return;
+		}
+
+		GFX->SubmitBatch();
+		std::vector<float> data = Hdr10::ReadSurface(surf);
+		float lo[4] = { 1e30f, 1e30f, 1e30f, 1e30f }, hi[4] = { -1e30f, -1e30f, -1e30f, -1e30f };
+		size_t nans = 0;
+		for (size_t i = 0; i < data.size(); i++)
+		{
+			if (!std::isfinite(data[i])) { nans++; continue; }
+			lo[i % 4] = std::min(lo[i % 4], data[i]);
+			hi[i % 4] = std::max(hi[i % 4], data[i]);
+		}
+		Printer::Line(QString("Surface stats %1 (%2, %3x%4): R %5..%6 G %7..%8 B %9..%10 A %11..%12, non-finite %13")
+			.arg((QString)label).arg(surf->frameBuffer->hdr ? "float" : "8-bit").arg(surf->size.width()).arg(surf->size.height())
+			.arg(lo[0]).arg(hi[0]).arg(lo[1]).arg(hi[1]).arg(lo[2]).arg(hi[2]).arg(lo[3]).arg(hi[3]).arg(nans));
+	}
+
+	BoolType surface_is_hdr(IntType id)
+	{
+		if (Surface* surf = FindSurface(id))
+			return surf->frameBuffer->hdr;
+		return false;
+	}
+
+	void surface_save_hdr10(IntType id, StringType filename, RealType paperWhite, RealType peak)
+	{
+		if (Surface* surf = FindSurface(id))
+		{
+			GFX->SubmitBatch();
+			Hdr10::Settings settings;
+			settings.paperWhite = (float)std::max(1.0, paperWhite);
+			settings.peak = (float)std::clamp(peak, 100.0, 10000.0);
+			if (!Hdr10::SavePng(surf, (QString)filename, settings))
+				WARNING("Could not save the HDR10 image " + (QString)filename);
 		}
 	}
 

@@ -6,6 +6,10 @@ function render_high_glow(prevsurf, glowfalloff = false)
 {
 	var glowcolorsurf, glowsurf, resultsurf;
 	
+	// HDR10 export: the glow colors must clamp at 1 like before (8-bit), only the result keeps highlights
+	if (render_hdr)
+		render_hdr_scratch_surfaces(false)
+	
 	render_surface[0] = surface_require(render_surface[0], render_width, render_height)
 	render_surface[1] = surface_require(render_surface[1], render_width, render_height)
 	glowcolorsurf = render_surface[0]
@@ -126,6 +130,9 @@ function render_high_glow(prevsurf, glowfalloff = false)
 		}
 		surface_reset_target()
 	}
+	
+	if (render_hdr)
+		render_hdr_scratch_surfaces(true)
 	
 	return resultsurf
 }

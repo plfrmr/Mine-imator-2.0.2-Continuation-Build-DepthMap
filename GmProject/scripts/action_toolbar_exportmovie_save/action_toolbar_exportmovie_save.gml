@@ -21,6 +21,7 @@ function action_toolbar_exportmovie_save()
 	exportmovie_framespersecond = popup_exportmovie.framespersecond
 	exportmovie_high_quality = popup_exportmovie.high_quality
 	exportmovie_raytraced = popup_exportmovie.raytraced
+	export_hdr10 = (popup_exportmovie.hdr10 && popup_exportmovie.format != "wmv") // WMV has no HDR codec
 	exportmovie_current_sound = null
 	
 	if (timeline_region_start != null)
@@ -49,6 +50,8 @@ function action_toolbar_exportmovie_save()
 		log("Size", project_video_width, project_video_height)
 		
 		movie_set(project_video_width, project_video_height, popup_exportmovie.bit_rate, exportmovie_framespersecond, popup_exportmovie.include_audio)
+		log("HDR10", yesno(export_hdr10))
+		movie_set_hdr(export_hdr10, project_render_hdr_paper_white, project_render_hdr_peak)
 		var err = movie_start(fn, fmt);
 		if (err < 0)
 		{

@@ -38,9 +38,12 @@ namespace CppProject
 		Printer::Line("[WARNING] " + text);
 	}
 
+	QString StackTraceOffsets();
+
 	void Printer::Fatal(QString text)
 	{
 		Printer::Line("[FATAL ERROR] " + text);
+		Printer::Line(StackTraceOffsets());
 		throw text;
 	}
 

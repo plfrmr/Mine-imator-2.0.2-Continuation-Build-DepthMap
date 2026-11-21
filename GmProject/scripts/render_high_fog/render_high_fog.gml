@@ -47,8 +47,12 @@ function render_high_fog(basesurf)
 				shader_clear()
 		}
 		
-		// Alpha fix
-		gpu_set_blendmode_ext(bm_src_color, bm_one) 
+		// Alpha fix (HDR10 export: basesurf is float there, so alpha must be composited instead of added, which only 8-bit clamps
+		// back to 1; alpha above 1 would brighten the colors in the next copy)
+		if (render_hdr)
+			gpu_set_blendmode_ext_sepalpha(bm_zero, bm_one, bm_one, bm_inv_src_alpha)
+		else
+			gpu_set_blendmode_ext(bm_src_color, bm_one) 
 		if (render_background)
 			draw_box(0, 0, render_width, render_height, false, c_black, 1)
 		else
