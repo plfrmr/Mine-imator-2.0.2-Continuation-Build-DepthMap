@@ -777,7 +777,9 @@ namespace CppProject
 
 	void Shader::WriteUniformValue(const UniformState& uniform, const void* data, IntType size)
 	{
-		if (!size)
+		// Never write past the uniform: padded float arrays are submitted as whole 16-byte elements, but the last
+		// element only takes 4 bytes in HLSL, the rest belongs to the next uniform (it overwrote uCameraPosition)
+		if (!size || size > uniform.totalBufferSize)
 			size = uniform.totalBufferSize;
 
 		char* dst;
@@ -879,6 +881,27 @@ namespace CppProject
 				WARNING("Shader: Sampler " + name + " not defined in texture2D call");
 		}
 
+		// Same for texture2DGrad calls (explicit derivatives)
+		auto texGradIt = QRegularExpression("texture2DGrad\\((.*?),").globalMatch(code);
+		while (texGradIt.hasNext())
+		{
+			QRegularExpressionMatch match = texGradIt.next();
+			QString name = match.captured(1);
+			if (samplerNameMap.contains(name))
+			{
+				code.replace("texture2DGrad(" + name + ",",
+					"_sampleUvRectGrad(" + name + ", "
+				#if API_D3D11
+					+ name + "_s, "
+				#endif
+					"_uUvRect[" + NumStr(samplerNameMap[name]) + "], "
+					"_uTexRepeat[" + NumStr(samplerNameMap[name]) + "] > 0,"
+				);
+			}
+			else
+				WARNING("Shader: Sampler " + name + " not defined in texture2DGrad call");
+		}
+		
 		// Object UvRect required when base sampler is used
 		if (useBatching && numSamplers > 0)
 		{

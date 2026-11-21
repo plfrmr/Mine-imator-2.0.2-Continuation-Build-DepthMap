@@ -19,6 +19,8 @@ varying mat3 vTBN;
 varying vec4 vColor;
 varying vec4 vCustom;
 varying mat3 vWorldViewInv;
+// World space face normal (for parallax), vTBN isn't in world space
+varying vec3 vWorldNormal;
 
 // Texture
 uniform vec2 uTextureOffset;
@@ -138,6 +140,9 @@ void main()
 	vTangent = normalize((vWorldViewInv * in_Tangent));
 	vTangent = normalize(vTangent - dot(vTangent, vNormal) * vNormal);
 	vTBN = mat3(vTangent, cross(vTangent, vNormal), vNormal);
+	
+	// World space face normal for parallax (vTBN isn't in world space)
+	vWorldNormal = normalize((gm_Matrices[MATRIX_WORLD] * vec4(in_Normal, 0.0)).xyz);
 	
 	// Color
 	vColor = uBlendColor * in_Colour;

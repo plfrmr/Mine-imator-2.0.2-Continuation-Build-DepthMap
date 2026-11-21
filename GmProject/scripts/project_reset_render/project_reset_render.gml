@@ -100,6 +100,9 @@ function project_reset_render()
 	project_render_rt_bounce_saturation = 1.5
 	project_render_pbr_normal_maps = true
 	project_render_pbr_normal_strength = 1
+	project_render_pbr_parallax = false
+	project_render_pbr_parallax_depth = .25
+	project_render_pbr_parallax_shadow = true
 	project_render_pbr_pack_maps = true
 	project_render_pbr_roughness = 1
 	project_render_pbr_metallic = 1

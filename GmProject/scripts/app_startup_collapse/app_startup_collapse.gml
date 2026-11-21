@@ -40,6 +40,7 @@ function app_startup_collapse()
 	collapse_register("hdr")
 	collapse_register("depth_map_detail")
 	collapse_register("pbr_normal")
+	collapse_register("pbr_parallax")
 	collapse_register("pbr_ao")
 	
 	collapse_register("sunlight")

@@ -80,6 +80,22 @@ namespace CppProject
 					"}\n\n";
 			}
 
+			// texture2DGrad(sampler, uv, dx, dy): sample with given UV derivatives (in texture2D UV space)
+			if (code.contains("texture2DGrad("))
+			{
+				header += "\n"
+					"vec4 _sampleUvRectGrad(sampler2D s, vec4 uvRect, bool repeat, vec2 uv, vec2 dx, vec2 dy)\n"
+					"{\n"
+					"\tif (repeat) uv = mod(uv, vec2(1.0, 1.0));\n"
+					"\tuv = uvRect.xy + uv * uvRect.zw;\n"
+					"\tuv.y = 1.0 - uv.y;\n";
+				if (gl40Supported)
+					header += "\treturn textureGrad(s, uv, dx * uvRect.zw * vec2(1.0, -1.0), dy * uvRect.zw * vec2(1.0, -1.0));\n";
+				else
+					header += "\treturn textureLod(s, uv, 0.0);\n"; // Same as texture2D without LOD queries
+				header += "}\n\n";
+			}
+			
 			// New keywords
 			code.replace("attribute", "in");
 			code.replace("varying", isVertex ? "out" : "in");

@@ -143,6 +143,7 @@ function shader_startup()
 	
 	with (shader_map[?shader_color_fog])
 	{
+		new_shader_sampler("uTextureHeight") // Parallax height map, see render_set_texture
 		new_shader_uniform("uColorsExt")
 		new_shader_uniform("uRGBAdd")
 		new_shader_uniform("uRGBSub")

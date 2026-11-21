@@ -161,6 +161,16 @@ namespace CppProject
                     "\treturn tex.SampleGrad(s, uv, derivX, derivY);\n"
                     "}\n\n" + code;
 
+            // texture2DGrad(sampler, uv, dx, dy): sample with given UV derivatives (in texture2D UV space)
+            if (code.contains("texture2DGrad("))
+                code = "\n"
+                    "float4 _sampleUvRectGrad(Texture2D tex, SamplerState s, float4 uvRect, bool repeat, float2 uv, float2 dx, float2 dy)\n"
+                    "{\n"
+                    "\tif (repeat) uv = mod(uv, float2(1.0, 1.0));\n"
+                    "\tuv = uvRect.xy + uv * uvRect.zw;\n"
+                    "\treturn tex.SampleGrad(s, uv, dx * uvRect.zw, dy * uvRect.zw);\n"
+                    "}\n\n" + code;
+            
             // Pro RegEx hacker way to replace M * expr with mul(M, expr), beats writing a GLSL parser
             QStringList matrices = gmMatrixUniformName;
             auto matIt = QRegularExpression("mat\\d ([a-zA-Z0-9]*)(\\[.*?\\])?.*;").globalMatch(code);
@@ -246,6 +256,8 @@ namespace CppProject
             code.replace(QRegularExpression("\\bfract\\b"), "frac");
             code.replace(QRegularExpression("\\bpow\\b"), "power");
             code.replace(QRegularExpression("\\batan\\b"), "atan2");
+            code.replace(QRegularExpression("\\bdFdx\\b"), "ddx");
+            code.replace(QRegularExpression("\\bdFdy\\b"), "ddy");
 
             // Replace for with while
             code.replace(QRegularExpression("for \\((.*?); ?([a-zA-Z]+)(.*?); ?.*?\\)"), "\\1-1; [loop] while (++\\2\\3)");

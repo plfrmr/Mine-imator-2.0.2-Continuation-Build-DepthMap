@@ -12,6 +12,7 @@ varying vec3 vPosition;
 varying float vDepth;
 varying vec4 vColor;
 varying vec2 vTexCoord;
+varying mat3 vTBN;
 
 uniform vec4 uBlendColor;
 
@@ -68,6 +69,12 @@ void main()
 	vDepth = (gm_Matrices[MATRIX_VIEW] * vec4(vPosition, 1.0)).z;
 	vColor = in_Colour * uBlendColor;
 	vTexCoord = in_TextureCoord + uTextureOffset;
+	
+	// Tangent space for parallax
+	vec3 normal = (gm_Matrices[MATRIX_WORLD] * vec4(in_Normal, 0.0)).xyz;
+	vec3 tangent = (gm_Matrices[MATRIX_WORLD] * vec4(in_Tangent, 0.0)).xyz;
+	tangent = normalize(tangent - dot(tangent, normal) * normal);
+	vTBN = mat3(tangent, cross(tangent, normal), normal);
 	
 	gl_Position = uTAAMatrix * gm_Matrices[MATRIX_PROJECTION] * (gm_Matrices[MATRIX_VIEW] * vec4(vPosition, 1.0));
 }

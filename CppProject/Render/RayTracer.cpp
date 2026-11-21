@@ -59,10 +59,10 @@ namespace CppProject
 			float ambient[4];
 			float strengths[4];	// bounce light, emissive, reflection, roughness cutoff
 			float ray[4];		// max distance, offset, sun softness (radians), light softness
-			float misc[4];		// alpha threshold, specular strength, debug view
+			float misc[4];		// alpha threshold, specular strength, debug view, parallax self-shadowing
 			float jitter[4];	// TAA jitter (normalized device coordinates)
 			float color[4];		// bounce color saturation, glass tint strength, default emissive
-			float pbr[4];		// normal map strength, normal maps enabled, texture AO strength
+			float pbr[4];		// normal map strength, normal maps enabled, texture AO strength, parallax depth
 		};
 
 		struct LightData
@@ -89,7 +89,10 @@ namespace CppProject
 			float matUvRect[4];
 			float normalUvRect[4];
 			uint32_t matFormat;
-			uint32_t pad0, pad1, pad2;
+			float parallaxTile[2]; // Tile size of the block sheet in UV, 0 = no parallax
+			uint32_t pad2;
+			float parallaxTexel[2]; // Size of a height map texel in UV
+			uint32_t pad3, pad4;
 		};
 
 		struct MeshEntry
@@ -119,6 +122,7 @@ namespace CppProject
 			IntType matTexId, normalTexId;
 			float matUvRect[4], normalUvRect[4];
 			int32_t matFormat;
+			float parallaxTile[2], parallaxTexel[2];
 		};
 
 		struct SharedTexture
@@ -893,6 +897,10 @@ namespace CppProject
 				inst.normalTexIndex = EnsureTexture(obj.normalTexId);
 				memcpy(inst.matUvRect, obj.matUvRect, sizeof(inst.matUvRect));
 				memcpy(inst.normalUvRect, obj.normalUvRect, sizeof(inst.normalUvRect));
+				inst.parallaxTile[0] = obj.parallaxTile[0];
+				inst.parallaxTile[1] = obj.parallaxTile[1];
+				inst.parallaxTexel[0] = obj.parallaxTexel[0];
+				inst.parallaxTexel[1] = obj.parallaxTexel[1];
 				data.append(inst);
 				sceneMeshUids.insert(obj.meshUid);
 			}
@@ -1089,6 +1097,12 @@ namespace CppProject
 			ReadUniform(shader, "uMaterialFormat", (float*)&obj.matFormat, 1); // Int uniform, same size as a float
 			obj.matTexId = ReadSampler(shader, "uTextureMaterial", obj.matUvRect);
 			obj.normalTexId = ReadSampler(shader, "uTextureNormal", obj.normalUvRect);
+
+			// Block sheet tile size for parallax, set by render_world_block
+			obj.parallaxTile[0] = obj.parallaxTile[1] = 0.f;
+			ReadUniform(shader, "uParallaxTile", obj.parallaxTile, 2);
+			obj.parallaxTexel[0] = obj.parallaxTexel[1] = 0.f;
+			ReadUniform(shader, "uParallaxTexel", obj.parallaxTexel, 2);
 
 			// Fully transparent objects don't block or reflect anything
 			if (obj.blendColor[3] <= 0.f)
@@ -1349,6 +1363,8 @@ namespace CppProject
 			constants.pbr[0] = (float)Param("normalstrength", 1);
 			constants.pbr[1] = (float)Param("normalmaps", 1);
 			constants.pbr[2] = (float)Param("aostrength", 1);
+			constants.pbr[3] = (float)Param("parallaxdepth", 0);
+			constants.misc[3] = (float)Param("parallaxshadow", 0);
 
 			constantBuffer->Map(0, nullptr, &ptr);
 			memcpy(ptr, &constants, sizeof(Constants));

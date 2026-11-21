@@ -26,6 +26,15 @@ function shader_use()
 	render_set_uniform("uPBRMetallic", app.project_render_pbr_metallic)
 	render_set_uniform("uPBRReflectivity", app.project_render_pbr_reflectivity)
 	
+	// Parallax, for block sheets only (render_world_block sets the tile size). Off in the fast workbench view.
+	if (!is_undefined(uniform_map[?"uParallaxDepth"]) && uniform_map[?"uParallaxDepth"] > -1)
+	{
+		var parallax = (app.project_render_pbr_parallax && !dev_mode_skip_tangents && render_mode != e_render_mode.COLOR_FOG && render_mode != e_render_mode.PREVIEW);
+		render_set_uniform("uParallaxDepth", parallax ? app.project_render_pbr_parallax_depth : 0)
+		render_set_uniform("uParallaxShadow", (parallax && app.project_render_pbr_parallax_shadow) ? 1 : 0)
+		render_set_uniform_vec2("uParallaxTile", 0, 0)
+	}
+	
 	// Set wind
 	if (!is_undefined(uniform_map[?"uTime"]) && uniform_map[?"uTime"] > -1)
 	{

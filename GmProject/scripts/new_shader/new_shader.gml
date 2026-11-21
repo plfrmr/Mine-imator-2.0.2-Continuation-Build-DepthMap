@@ -36,6 +36,12 @@ function new_shader(name)
 		
 		new_shader_uniform("uCameraPosition")
 		
+		// Parallax (block shaders)
+		new_shader_uniform("uParallaxTile")
+		new_shader_uniform("uParallaxTexel")
+		new_shader_uniform("uParallaxDepth")
+		new_shader_uniform("uParallaxShadow")
+		
 		// Rendering effects
 		new_shader_uniform("uTAAMatrix")
 		new_shader_uniform("uSampleIndex")
