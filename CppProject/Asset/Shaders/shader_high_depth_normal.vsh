@@ -9,7 +9,6 @@ uniform float uFar; // static
 uniform float uNear; // static
 
 uniform vec4 uBlendColor;
-uniform vec3 uCameraPosition; // static
 
 varying vec3 vPosition;
 varying vec2 vTexCoord;
@@ -20,8 +19,8 @@ varying mat3 vTBN;
 varying vec4 vColor;
 varying vec4 vCustom;
 varying mat3 vWorldViewInv;
-// Direction to the camera in tangent space (for parallax), vTBN isn't in world space
-varying vec3 vViewTS;
+// World space face normal (for parallax), vTBN isn't in world space
+varying vec3 vWorldNormal;
 
 // Texture
 uniform vec2 uTextureOffset;
@@ -142,12 +141,8 @@ void main()
 	vTangent = normalize(vTangent - dot(vTangent, vNormal) * vNormal);
 	vTBN = mat3(vTangent, cross(vTangent, vNormal), vNormal);
 	
-	// Parallax view direction, from world space vectors
-	vec3 worldNormal = normalize((gm_Matrices[MATRIX_WORLD] * vec4(in_Normal, 0.0)).xyz);
-	vec3 worldTangent = (gm_Matrices[MATRIX_WORLD] * vec4(in_Tangent, 0.0)).xyz;
-	worldTangent = normalize(worldTangent - dot(worldTangent, worldNormal) * worldNormal);
-	vec3 toCamera = uCameraPosition - vPosition;
-	vViewTS = vec3(dot(toCamera, worldTangent), dot(toCamera, cross(worldTangent, worldNormal)), dot(toCamera, worldNormal));
+	// World space face normal for parallax (vTBN isn't in world space)
+	vWorldNormal = normalize((gm_Matrices[MATRIX_WORLD] * vec4(in_Normal, 0.0)).xyz);
 	
 	// Color
 	vColor = uBlendColor * in_Colour;

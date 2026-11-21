@@ -38,6 +38,7 @@ function new_shader(name)
 		
 		// Parallax (block shaders)
 		new_shader_uniform("uParallaxTile")
+		new_shader_uniform("uParallaxTexel")
 		new_shader_uniform("uParallaxDepth")
 		new_shader_uniform("uParallaxShadow")
 		

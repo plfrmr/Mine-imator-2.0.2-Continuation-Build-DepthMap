@@ -70,6 +70,8 @@ struct InstanceData
 	uint matFormat;			// 0 = none, 1 = SEUS, 2 = LabPBR
 	float2 parallaxTile;	// Tile size of the block sheet in UV for parallax, 0 = not a block sheet
 	uint pad2;
+	float2 parallaxTexel;	// Size of a height map texel in UV
+	uint pad3, pad4;
 };
 
 #define NO_TEXTURE 0xFFFFFFFF
@@ -232,9 +234,12 @@ struct Parallax
 	uint tex;			// Normal map holding the height in its alpha, NO_TEXTURE = no parallax
 	float4 uvRect;
 	float2 tile;		// Tile size of the block sheet in UV
+	float2 texel;		// Size of a height map texel in UV
 	float2 uv;			// Where the view ray hit the height map
 	float depth;		// How deep the hit is, 0-1 of the parallax depth
-	float3 T, B, N;		// Tangent space
+	float2 side;		// Side of the texel column that was hit, in texels (0 = its top)
+	float3 gradU, gradV;	// How the texture coordinate changes in world space: uv += (dot(d, gradU), dot(d, gradV))
+	float3 N;			// Face normal
 };
 
 struct Surface
@@ -309,70 +314,130 @@ float2 WrapParallaxTile(float2 uv, float2 tileMin, float2 tile)
 	return tileMin + clamp(m - tile * floor(m / tile), 0.0, tile * 0.9999);
 }
 
-// Moves the texture coordinate to where the view ray hits the height map. v = direction towards the viewer in tangent space.
-float2 ParallaxUV(inout Parallax p, float2 uv, float3 v)
+// Depth (0-1 of the parallax depth) of the texel column at a texel position of the tile
+float ParallaxTexelDepth(Parallax p, float2 cell, float2 tileMin)
+{
+	return 1.0 - ParallaxHeight(p, WrapParallaxTile(tileMin + (cell + 0.5) * p.texel, tileMin, p.tile));
+}
+
+// Texels moved per unit of depth (0-1 of the parallax depth) when following a world direction into or out of the surface
+float2 ParallaxTexelDir(Parallax p, float3 dir)
+{
+	float2 t = float2(dot(dir, p.gradU), dot(dir, p.gradV)) / max(dot(dir, p.N), 0.05) * (uPBR.w * 16.0) / p.texel;
+	t.x = (abs(t.x) < 0.00001) ? 0.00001 : t.x;
+	t.y = (abs(t.y) < 0.00001) ? 0.00001 : t.y;
+	return t;
+}
+
+// Moves the texture coordinate to where the view ray hits the height map. Every texel is a column of its own height:
+// the ray steps from texel to texel and hits the top or a side of a column. viewDir = direction towards the viewer.
+float2 ParallaxUV(inout Parallax p, float2 uv, float3 viewDir)
 {
 	p.uv = uv;
 	p.depth = 0.0;
-	if (v.z <= 0.0)
+	p.side = float2(0.0, 0.0);
+	if (dot(viewDir, p.N) <= 0.0)
 	{
 		p.tex = NO_TEXTURE;
 		return uv;
 	}
 
 	float2 tileMin = floor(uv / p.tile) * p.tile;
+	float2 pos = (uv - tileMin) / p.texel;
+	float2 dir = -ParallaxTexelDir(p, viewDir);
+	float2 stepDir = float2(dir.x > 0.0 ? 1.0 : -1.0, dir.y > 0.0 ? 1.0 : -1.0);
+	float2 cell = floor(pos);
+	float2 tDelta = abs(1.0 / dir);
+	float2 tMax = (cell + max(stepDir, 0.0) - pos) / dir;
+	float2 side = float2(0.0, 0.0);
+	float t = 0.0;
 
-	// More layers when looking from the side, where the ray crosses more of the texture
-	float layers = floor(lerp(48.0, 12.0, v.z));
-	float layerStep = 1.0 / layers;
-	float2 uvStep = -(v.xy / max(v.z, 0.15)) * p.tile * (uPBR.w * layerStep);
-
-	float2 curUV = uv, prevUV = uv;
-	float curLayer = 0.0, prevLayer = 0.0;
-	float curDepth = 1.0 - ParallaxHeight(p, uv);
-	float prevDepth = curDepth;
-
-	for (int i = 0; i < 48 && curLayer < curDepth && (float)i < layers; i++)
+	for (int i = 0; i < 128; i++)
 	{
-		prevUV = curUV;
-		prevLayer = curLayer;
-		prevDepth = curDepth;
-		curUV += uvStep;
-		curLayer += layerStep;
-		curDepth = 1.0 - ParallaxHeight(p, WrapParallaxTile(curUV, tileMin, p.tile));
+		float cellDepth = ParallaxTexelDepth(p, cell, tileMin);
+
+		// Entered this column below its top: hit its side
+		if (t >= cellDepth)
+		{
+			p.side = side;
+			break;
+		}
+
+		// Hits the top inside this texel
+		float tExit = min(min(tMax.x, tMax.y), 1.0);
+		if (cellDepth <= tExit)
+		{
+			t = cellDepth;
+			break;
+		}
+
+		// Reached the bottom
+		if (tExit >= 1.0)
+		{
+			t = 1.0;
+			break;
+		}
+
+		// Next texel
+		if (tMax.x < tMax.y)
+		{
+			cell.x += stepDir.x;
+			t = tMax.x;
+			tMax.x += tDelta.x;
+			side = float2(-stepDir.x, 0.0);
+		}
+		else
+		{
+			cell.y += stepDir.y;
+			t = tMax.y;
+			tMax.y += tDelta.y;
+			side = float2(0.0, -stepDir.y);
+		}
 	}
 
-	// Interpolate between the last two layers for a smooth surface
-	float after = curDepth - curLayer, before = prevDepth - prevLayer;
-	float w = (abs(after - before) > 0.00001) ? saturate(after / (after - before)) : 0.0;
-	p.depth = lerp(curLayer, prevLayer, w);
-	p.uv = WrapParallaxTile(lerp(curUV, prevUV, w), tileMin, p.tile);
+	p.depth = t;
+	float2 hitPos = clamp(pos + dir * t, cell + 0.001, cell + 0.999);
+	p.uv = WrapParallaxTile(tileMin + hitPos * p.texel, tileMin, p.tile);
 	return p.uv;
 }
 
-// Self-shadowing: 1 = lit, 0 = a raised part of the height map is between the parallax hit and the light (world direction L)
+// Self-shadowing: 1 = lit, 0 = a texel column between the parallax hit and the light blocks it (world direction L)
 float ParallaxShadow(Parallax p, float3 L)
 {
-	if (p.tex == NO_TEXTURE || p.depth <= 0.0 || uMisc.w < 0.5)
-		return 1.0;
-
-	float3 l = float3(dot(L, p.T), dot(L, p.B), dot(L, p.N));
-	if (l.z <= 0.0)
+	if (p.tex == NO_TEXTURE || p.depth <= 0.0 || uMisc.w < 0.5 || dot(L, p.N) <= 0.0)
 		return 1.0;
 
 	float2 tileMin = floor(p.uv / p.tile) * p.tile;
-	float layerStep = p.depth / 16.0;
-	float2 uvStep = (l.xy / max(l.z, 0.15)) * p.tile * (uPBR.w * layerStep);
-	float2 curUV = p.uv;
-	float curLayer = p.depth;
+	float2 pos = (p.uv - tileMin) / p.texel;
+	float2 dir = ParallaxTexelDir(p, L);
+	float2 stepDir = float2(dir.x > 0.0 ? 1.0 : -1.0, dir.y > 0.0 ? 1.0 : -1.0);
+	float2 cell = floor(pos);
+	float2 tDelta = abs(1.0 / dir);
+	float2 tMax = (cell + max(stepDir, 0.0) - pos) / dir;
 	float shadow = 0.0;
 
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < 64; i++)
 	{
-		curUV += uvStep;
-		curLayer -= layerStep;
-		float blocker = curLayer - (1.0 - ParallaxHeight(p, WrapParallaxTile(curUV, tileMin, p.tile)));
-		shadow = max(shadow, saturate(blocker * 12.0 * (1.0 - i / 16.0))); // Softer further away
+		// Leave the current texel, stop when the ray is back above the surface
+		float t;
+		if (tMax.x < tMax.y)
+		{
+			cell.x += stepDir.x;
+			t = tMax.x;
+			tMax.x += tDelta.x;
+		}
+		else
+		{
+			cell.y += stepDir.y;
+			t = tMax.y;
+			tMax.y += tDelta.y;
+		}
+
+		if (t >= p.depth)
+			break;
+
+		// A column whose top is above the ray blocks the light
+		shadow = max(shadow, saturate(((p.depth - t) - ParallaxTexelDepth(p, cell, tileMin)) * 30.0));
 	}
 
 	return 1.0 - shadow;
@@ -431,15 +496,27 @@ Surface FetchSurface(uint instanceId, uint primIndex, float2 bary, float3x4 obje
 
 	// Parallax: every texture is sampled where the ray hits the height map (front faces of block sheets)
 	Parallax pom = NoParallax();
-	if (hasTangent && !flipped && uPBR.w > 0.0 && inst.parallaxTile.x > 0.0 && inst.parallaxTile.y > 0.0)
+	if (inst.normalTexIndex != NO_TEXTURE && !flipped && uPBR.w > 0.0 && inst.parallaxTile.x > 0.0 && inst.parallaxTile.y > 0.0 && inst.parallaxTexel.x > 0.0)
 	{
+		// UV gradients from the triangle's world space edges (works for any face orientation and mirrored textures)
+		float3 p0 = mul(o2w, asfloat(vb.Load3(idx.x * VERTEX_STRIDE)));
+		float3 e1 = mul(o2w, asfloat(vb.Load3(idx.y * VERTEX_STRIDE))) - p0;
+		float3 e2 = mul(o2w, asfloat(vb.Load3(idx.z * VERTEX_STRIDE))) - p0;
+		float2 uv0 = asfloat(vb.Load2(idx.x * VERTEX_STRIDE + 20));
+		float2 d1 = asfloat(vb.Load2(idx.y * VERTEX_STRIDE + 20)) - uv0;
+		float2 d2 = asfloat(vb.Load2(idx.z * VERTEX_STRIDE + 20)) - uv0;
+		float3 fn = cross(e1, e2);
+		float nn = max(dot(fn, fn), 1e-20);
+		float3 c1 = cross(e2, fn), c2 = cross(fn, e1);
+
 		pom.tex = inst.normalTexIndex;
 		pom.uvRect = inst.normalUvRect;
 		pom.tile = inst.parallaxTile;
-		pom.T = T;
-		pom.B = B;
+		pom.texel = inst.parallaxTexel;
+		pom.gradU = (d1.x * c1 + d2.x * c2) / nn;
+		pom.gradV = (d1.y * c1 + d2.y * c2) / nn;
 		pom.N = normal;
-		uv = ParallaxUV(pom, uv, float3(dot(-rayDir, T), dot(-rayDir, B), dot(-rayDir, normal)));
+		uv = ParallaxUV(pom, uv, -rayDir);
 	}
 
 	float4 tex = SampleInstanceTexture(inst, uv);
@@ -462,6 +539,10 @@ Surface FetchSurface(uint instanceId, uint primIndex, float2 bary, float3x4 obje
 				normal = mapped;
 		}
 	}
+
+	// Parallax hit the side of a texel column: light it with the side's normal
+	if (pom.tex != NO_TEXTURE && (pom.side.x != 0.0 || pom.side.y != 0.0))
+		normal = normalize(pom.side.x * normalize(pom.gradU) + pom.side.y * normalize(pom.gradV));
 
 	// Emission: material map (LabPBR alpha, SEUS blue) or the object/vertex value, scaled by Default emissive like the rasterizer
 	float emissive = max(inst.emissive, vertexEmissive * uColor.z);

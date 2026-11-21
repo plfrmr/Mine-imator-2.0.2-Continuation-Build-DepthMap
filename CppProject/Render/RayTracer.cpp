@@ -91,6 +91,8 @@ namespace CppProject
 			uint32_t matFormat;
 			float parallaxTile[2]; // Tile size of the block sheet in UV, 0 = no parallax
 			uint32_t pad2;
+			float parallaxTexel[2]; // Size of a height map texel in UV
+			uint32_t pad3, pad4;
 		};
 
 		struct MeshEntry
@@ -120,7 +122,7 @@ namespace CppProject
 			IntType matTexId, normalTexId;
 			float matUvRect[4], normalUvRect[4];
 			int32_t matFormat;
-			float parallaxTile[2];
+			float parallaxTile[2], parallaxTexel[2];
 		};
 
 		struct SharedTexture
@@ -897,6 +899,8 @@ namespace CppProject
 				memcpy(inst.normalUvRect, obj.normalUvRect, sizeof(inst.normalUvRect));
 				inst.parallaxTile[0] = obj.parallaxTile[0];
 				inst.parallaxTile[1] = obj.parallaxTile[1];
+				inst.parallaxTexel[0] = obj.parallaxTexel[0];
+				inst.parallaxTexel[1] = obj.parallaxTexel[1];
 				data.append(inst);
 				sceneMeshUids.insert(obj.meshUid);
 			}
@@ -1097,6 +1101,8 @@ namespace CppProject
 			// Block sheet tile size for parallax, set by render_world_block
 			obj.parallaxTile[0] = obj.parallaxTile[1] = 0.f;
 			ReadUniform(shader, "uParallaxTile", obj.parallaxTile, 2);
+			obj.parallaxTexel[0] = obj.parallaxTexel[1] = 0.f;
+			ReadUniform(shader, "uParallaxTexel", obj.parallaxTexel, 2);
 
 			// Fully transparent objects don't block or reflect anything
 			if (obj.blendColor[3] <= 0.f)

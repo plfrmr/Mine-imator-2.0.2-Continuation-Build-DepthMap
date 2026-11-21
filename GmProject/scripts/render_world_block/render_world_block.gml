@@ -82,6 +82,14 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 	anitileh = 1 / minecraft_block_animated_sheet_size[1]
 	render_set_uniform_vec2("uParallaxTile", tilew, tileh)
 	
+	// Size of one height map texel in UV, the ray march steps from texel to texel
+	var texelw, texelh, anitexelw, anitexelh;
+	texelw = 1 / max(1, texture_width(texnormal))
+	texelh = 1 / max(1, texture_height(texnormal))
+	anitexelw = 1 / max(1, texture_width(texaninormal))
+	anitexelh = 1 / max(1, texture_height(texaninormal))
+	render_set_uniform_vec2("uParallaxTexel", texelw, texelh)
+	
 	// Rotate by 90 degrees for legacy support
 	if (rotate)
 		matrix_world_multiply_pre(matrix_create(point3D(0, size[Y] * block_size, 0), vec3(0, 0, 90), vec3(1)))
@@ -142,8 +150,10 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 		}
 		
 		render_set_uniform_vec2("uParallaxTile", anitilew, anitileh)
+		render_set_uniform_vec2("uParallaxTexel", anitexelw, anitexelh)
 		vbuffer_render(vbuffer[e_block_depth.DEPTH0, e_block_vbuffer.ANIMATED])
 		render_set_uniform_vec2("uParallaxTile", tilew, tileh)
+		render_set_uniform_vec2("uParallaxTexel", texelw, texelh)
 		
 		if (res[1] != mc_res && texanimatsheet)
 		{
@@ -300,8 +310,10 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 		}
 		
 		render_set_uniform_vec2("uParallaxTile", anitilew, anitileh)
+		render_set_uniform_vec2("uParallaxTexel", anitexelw, anitexelh)
 		vbuffer_render(vbuffer[e_block_depth.DEPTH1, e_block_vbuffer.ANIMATED])
 		render_set_uniform_vec2("uParallaxTile", tilew, tileh)
+		render_set_uniform_vec2("uParallaxTexel", texelw, texelh)
 		
 		if (res[1] != mc_res && texanimatsheet)
 		{
@@ -351,8 +363,10 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 		}
 		
 		render_set_uniform_vec2("uParallaxTile", anitilew, anitileh)
+		render_set_uniform_vec2("uParallaxTexel", anitexelw, anitexelh)
 		vbuffer_render(vbuffer[e_block_depth.DEPTH2, e_block_vbuffer.ANIMATED])
 		render_set_uniform_vec2("uParallaxTile", tilew, tileh)
+		render_set_uniform_vec2("uParallaxTexel", texelw, texelh)
 		
 		if (res[1] != mc_res && texanimatsheet)
 		{
@@ -406,9 +420,11 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 				render_set_uniform_vec2("uParallaxTile", 0, 0)
 			else
 				render_set_uniform_vec2("uParallaxTile", anitilew, anitileh)
+				render_set_uniform_vec2("uParallaxTexel", anitexelw, anitexelh)
 			
 			vbuffer_render(vbuffer[e_block_depth.DEPTH2, e_block_vbuffer.WATER])
 			render_set_uniform_vec2("uParallaxTile", tilew, tileh)
+			render_set_uniform_vec2("uParallaxTexel", texelw, texelh)
 			
 			render_set_uniform_color("uBlendColor", blend, shader_blend_alpha)
 			render_set_uniform_int("uIsWater", 0)
