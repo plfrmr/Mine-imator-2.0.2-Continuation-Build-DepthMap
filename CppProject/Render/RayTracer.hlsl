@@ -38,10 +38,10 @@ cbuffer Constants : register(b0)
 	float4 uAmbient;	// rgb = ambient color, a = ambient strength
 	float4 uStrengths;	// bounce light strength, emissive strength, reflection strength, roughness cutoff
 	float4 uRay;		// max ray distance, ray offset, sun softness (radians), light softness
-	float4 uMisc;		// alpha cutout threshold, specular highlight strength, debug view, unused
+	float4 uMisc;		// alpha cutout threshold, specular highlight strength, debug view, parallax self-shadowing (1/0)
 	float4 uJitter;		// xy = TAA jitter of the G-buffer in normalized device coordinates
 	float4 uColor;		// bounce color saturation, glass tint strength, default emissive, unused
-	float4 uPBR;		// normal map strength, normal maps enabled (1/0), texture AO strength, unused
+	float4 uPBR;		// normal map strength, normal maps enabled (1/0), texture AO strength, parallax depth (0 = off)
 };
 
 struct Light
@@ -68,7 +68,8 @@ struct InstanceData
 	float4 matUvRect;
 	float4 normalUvRect;
 	uint matFormat;			// 0 = none, 1 = SEUS, 2 = LabPBR
-	uint pad0, pad1, pad2;
+	float2 parallaxTile;	// Tile size of the block sheet in UV for parallax, 0 = not a block sheet
+	uint pad2;
 };
 
 #define NO_TEXTURE 0xFFFFFFFF
@@ -225,6 +226,17 @@ float3 ToLinear(float3 c)
 // ----------------------------------------------------------------------------------------------------------------------
 // Scene hit data
 
+// Parallax occlusion mapping state of a surface (see ParallaxUV)
+struct Parallax
+{
+	uint tex;			// Normal map holding the height in its alpha, NO_TEXTURE = no parallax
+	float4 uvRect;
+	float2 tile;		// Tile size of the block sheet in UV
+	float2 uv;			// Where the view ray hit the height map
+	float depth;		// How deep the hit is, 0-1 of the parallax depth
+	float3 T, B, N;		// Tangent space
+};
+
 struct Surface
 {
 	float3 pos;
@@ -234,6 +246,7 @@ struct Surface
 	float emissive;
 	float ao;		// Texture ambient occlusion (LabPBR normal map blue channel), 1 = none
 	float3x3 objectToWorld;
+	Parallax pom;
 };
 
 uint3 LoadIndices(uint meshIndex, uint primIndex)
@@ -273,6 +286,98 @@ float4 SampleInstanceTexture(InstanceData inst, float2 uv)
 	return SampleTexture(inst.texIndex, inst.uvRect, uv, float4(1.0, 1.0, 1.0, 1.0));
 }
 
+// ----------------------------------------------------------------------------------------------------------------------
+// Parallax occlusion mapping (same as the rasterizer): the height is in the normal map's alpha (LabPBR/SEUS, 1 = surface,
+// 0 = deepest). Block textures share one sheet, so the ray march wraps around inside the block's own tile.
+
+Parallax NoParallax()
+{
+	Parallax p = (Parallax)0;
+	p.tex = NO_TEXTURE;
+	return p;
+}
+
+float ParallaxHeight(Parallax p, float2 uv)
+{
+	float h = SampleTexture(p.tex, p.uvRect, uv, float4(0.5, 0.5, 1.0, 1.0)).a;
+	return (h < 0.01) ? 1.0 : h; // 0 = no normal map
+}
+
+float2 WrapParallaxTile(float2 uv, float2 tileMin, float2 tile)
+{
+	float2 m = uv - tileMin;
+	return tileMin + clamp(m - tile * floor(m / tile), 0.0, tile * 0.9999);
+}
+
+// Moves the texture coordinate to where the view ray hits the height map. v = direction towards the viewer in tangent space.
+float2 ParallaxUV(inout Parallax p, float2 uv, float3 v)
+{
+	p.uv = uv;
+	p.depth = 0.0;
+	if (v.z <= 0.0)
+	{
+		p.tex = NO_TEXTURE;
+		return uv;
+	}
+
+	float2 tileMin = floor(uv / p.tile) * p.tile;
+
+	// More layers when looking from the side, where the ray crosses more of the texture
+	float layers = floor(lerp(48.0, 12.0, v.z));
+	float layerStep = 1.0 / layers;
+	float2 uvStep = -(v.xy / max(v.z, 0.15)) * p.tile * (uPBR.w * layerStep);
+
+	float2 curUV = uv, prevUV = uv;
+	float curLayer = 0.0, prevLayer = 0.0;
+	float curDepth = 1.0 - ParallaxHeight(p, uv);
+	float prevDepth = curDepth;
+
+	for (int i = 0; i < 48 && curLayer < curDepth && (float)i < layers; i++)
+	{
+		prevUV = curUV;
+		prevLayer = curLayer;
+		prevDepth = curDepth;
+		curUV += uvStep;
+		curLayer += layerStep;
+		curDepth = 1.0 - ParallaxHeight(p, WrapParallaxTile(curUV, tileMin, p.tile));
+	}
+
+	// Interpolate between the last two layers for a smooth surface
+	float after = curDepth - curLayer, before = prevDepth - prevLayer;
+	float w = (abs(after - before) > 0.00001) ? saturate(after / (after - before)) : 0.0;
+	p.depth = lerp(curLayer, prevLayer, w);
+	p.uv = WrapParallaxTile(lerp(curUV, prevUV, w), tileMin, p.tile);
+	return p.uv;
+}
+
+// Self-shadowing: 1 = lit, 0 = a raised part of the height map is between the parallax hit and the light (world direction L)
+float ParallaxShadow(Parallax p, float3 L)
+{
+	if (p.tex == NO_TEXTURE || p.depth <= 0.0 || uMisc.w < 0.5)
+		return 1.0;
+
+	float3 l = float3(dot(L, p.T), dot(L, p.B), dot(L, p.N));
+	if (l.z <= 0.0)
+		return 1.0;
+
+	float2 tileMin = floor(p.uv / p.tile) * p.tile;
+	float layerStep = p.depth / 16.0;
+	float2 uvStep = (l.xy / max(l.z, 0.15)) * p.tile * (uPBR.w * layerStep);
+	float2 curUV = p.uv;
+	float curLayer = p.depth;
+	float shadow = 0.0;
+
+	for (int i = 0; i < 16; i++)
+	{
+		curUV += uvStep;
+		curLayer -= layerStep;
+		float blocker = curLayer - (1.0 - ParallaxHeight(p, WrapParallaxTile(curUV, tileMin, p.tile)));
+		shadow = max(shadow, saturate(blocker * 12.0 * (1.0 - i / 16.0))); // Softer further away
+	}
+
+	return 1.0 - shadow;
+}
+
 // Color and alpha of a candidate triangle, for cutout textures (leaves, glass...)
 float4 CandidateColor(uint instanceId, uint primIndex, float2 bary)
 {
@@ -308,8 +413,36 @@ Surface FetchSurface(uint instanceId, uint primIndex, float2 bary, float3x4 obje
 
 	float2 uv = InterpolateUV(inst.meshIndex, idx, bary);
 	float4 color = UnpackVertexColor(c.x) * w.x + UnpackVertexColor(c.y) * w.y + UnpackVertexColor(c.z) * w.z;
-	float4 tex = SampleInstanceTexture(inst, uv);
 	float vertexEmissive = (((d.x >> 8) & 0xFF) * w.x + ((d.y >> 8) & 0xFF) * w.y + ((d.z >> 8) & 0xFF) * w.z) / 255.0;
+
+	// Tangent space of the normal and height maps
+	float3 T = float3(0.0, 0.0, 0.0), B = float3(0.0, 0.0, 0.0);
+	bool hasTangent = false;
+	if (inst.normalTexIndex != NO_TEXTURE)
+	{
+		float3 tangent = mul(o2w, UnpackVertexNormal(vb.Load(idx.x * VERTEX_STRIDE + 32)));
+		if (dot(tangent, tangent) > 0.01)
+		{
+			T = normalize(tangent - dot(tangent, normal) * normal);
+			B = cross(T, flipped ? -normal : normal);
+			hasTangent = true;
+		}
+	}
+
+	// Parallax: every texture is sampled where the ray hits the height map (front faces of block sheets)
+	Parallax pom = NoParallax();
+	if (hasTangent && !flipped && uPBR.w > 0.0 && inst.parallaxTile.x > 0.0 && inst.parallaxTile.y > 0.0)
+	{
+		pom.tex = inst.normalTexIndex;
+		pom.uvRect = inst.normalUvRect;
+		pom.tile = inst.parallaxTile;
+		pom.T = T;
+		pom.B = B;
+		pom.N = normal;
+		uv = ParallaxUV(pom, uv, float3(dot(-rayDir, T), dot(-rayDir, B), dot(-rayDir, normal)));
+	}
+
+	float4 tex = SampleInstanceTexture(inst, uv);
 
 	// Normal map (same decoding as the rasterizer)
 	float ao = 1.0;
@@ -318,21 +451,15 @@ Surface FetchSurface(uint instanceId, uint primIndex, float2 bary, float3x4 obje
 		float4 nt = SampleTexture(inst.normalTexIndex, inst.normalUvRect, uv, float4(0.5, 0.5, 1.0, 1.0));
 		if (inst.matFormat == MATERIAL_LABPBR)
 			ao = nt.b;
-		
-		if (nt.a >= 0.01)
+
+		if (nt.a >= 0.01 && hasTangent)
 		{
-			float3 tangent = mul(o2w, UnpackVertexNormal(vb.Load(idx.x * VERTEX_STRIDE + 32)));
-			if (dot(tangent, tangent) > 0.01)
-			{
-				float3 T = normalize(tangent - dot(tangent, normal) * normal);
-				float3 B = cross(T, flipped ? -normal : normal);
-				float2 nxy = nt.xy * 2.0 - 1.0;
-				float nz = sqrt(max(0.0, 1.0 - dot(nxy, nxy)));
-				nxy *= uPBR.x; // Strength scales the slopes, normalized below
-				float3 mapped = normalize(T * nxy.x + B * -nxy.y + normal * nz);
-				if (dot(mapped, normal) > 0.0)
-					normal = mapped;
-			}
+			float2 nxy = nt.xy * 2.0 - 1.0;
+			float nz = sqrt(max(0.0, 1.0 - dot(nxy, nxy)));
+			nxy *= uPBR.x; // Strength scales the slopes, normalized below
+			float3 mapped = normalize(T * nxy.x + B * -nxy.y + normal * nz);
+			if (dot(mapped, normal) > 0.0)
+				normal = mapped;
 		}
 	}
 
@@ -355,6 +482,7 @@ Surface FetchSurface(uint instanceId, uint primIndex, float2 bary, float3x4 obje
 	s.emissive = emissive;
 	s.ao = ao;
 	s.objectToWorld = o2w;
+	s.pom = pom;
 	return s;
 }
 
@@ -479,7 +607,7 @@ float GeometrySmith(float NdotV, float NdotL, float roughness)
 
 // Light from the sun and placed lights with ray traced shadows. Returns diffuse light (same units as the light buffer),
 // optionally adds specular highlights for the given view direction and material.
-float3 DirectLight(float3 pos, float3 normal, float3 viewDir, float roughness, float3 specTint, bool doSpecular,
+float3 DirectLight(float3 pos, float3 normal, Parallax pom, float3 viewDir, float roughness, float3 specTint, bool doSpecular,
 				   inout uint seed, inout float3 specular)
 {
 	float3 result = float3(0.0, 0.0, 0.0);
@@ -526,6 +654,11 @@ float3 DirectLight(float3 pos, float3 normal, float3 viewDir, float roughness, f
 
 		float NdotL = dot(normal, L);
 		if (NdotL <= 0.0 || att <= 0.0)
+			continue;
+
+		// Height map self-shadowing (parallax)
+		att *= ParallaxShadow(pom, L);
+		if (att <= 0.0)
 			continue;
 
 		float3 visibility = float3(1.0, 1.0, 1.0);
@@ -579,7 +712,7 @@ float3 TraceRadiance(float3 origin, float3 dir, uint bounces, inout uint seed)
 		if (lightsOnBounces)
 		{
 			float3 unusedSpec = float3(0.0, 0.0, 0.0);
-			light += DirectLight(s.pos, s.normal, -dir, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
+			light += DirectLight(s.pos, s.normal, s.pom, -dir, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
 		}
 
 		float3 bounceColor = BounceColor(s.albedo);
@@ -631,12 +764,14 @@ void main(uint3 id : SV_DispatchThreadID)
 	Surface primary;
 	float debugNormalSource = 0.0; // 0 = no primary hit, 1 = geometry
 	float primaryAO = 1.0;
+	Parallax primaryPom = NoParallax();
 	if (TraceClosest(uCamPos.xyz, primaryDir, 1000000.0, primary))
 	{
 		pos = primary.pos;
 		normal = primary.normal;
 		debugNormalSource = 1.0; // Includes the normal map, applied in FetchSurface
 		primaryAO = lerp(1.0, primary.ao, uPBR.z);
+		primaryPom = primary.pom;
 	}
 	else // Fall back to the G-buffer
 	{
@@ -728,7 +863,7 @@ void main(uint3 id : SV_DispatchThreadID)
 
 	// Direct light
 	// Specular highlights are scaled by the surface's fresnel like in Render mode (rough non-metals barely shine)
-	float3 light = DirectLight(pos, normal, viewDir, roughness, specTint * fresnel, doSpecular && fresnel > 0.0, seed, specular);
+	float3 light = DirectLight(pos, normal, primaryPom, viewDir, roughness, specTint * fresnel, doSpecular && fresnel > 0.0, seed, specular);
 
 	// Light from the environment and bounced light. A ray that escapes to the sky brings the ambient/sky light (so corners and
 	// covered areas get darker), a ray that hits something brings back the light bouncing off it.
@@ -746,7 +881,7 @@ void main(uint3 id : SV_DispatchThreadID)
 			if (uSize.w & FLAG_BOUNCE_LIGHTS)
 			{
 				float3 unusedSpec = float3(0.0, 0.0, 0.0);
-				bounce += DirectLight(s.pos, s.normal, -dir, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
+				bounce += DirectLight(s.pos, s.normal, s.pom, -dir, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
 			}
 			if (uCounts.y > 1)
 				bounce += TraceRadiance(s.pos + s.normal * uRay.y, SampleCosineHemisphere(s.normal, seed), uCounts.y - 1, seed);
@@ -770,7 +905,7 @@ void main(uint3 id : SV_DispatchThreadID)
 			{
 				float3 unusedSpec = float3(0.0, 0.0, 0.0);
 				float3 hitLight = EnvironmentLight() + s.emissive * uStrengths.y;
-				hitLight += DirectLight(s.pos, s.normal, -R, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
+				hitLight += DirectLight(s.pos, s.normal, s.pom, -R, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
 
 				if ((uSize.w & FLAG_INDIRECT) && uCounts.z > 0)
 					hitLight += TraceRadiance(s.pos + s.normal * uRay.y, SampleCosineHemisphere(s.normal, seed), uCounts.z, seed) * uStrengths.x;

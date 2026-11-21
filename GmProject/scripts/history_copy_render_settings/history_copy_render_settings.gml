@@ -93,6 +93,9 @@ function history_copy_render_settings(obj)
 	project_render_rt_bounce_saturation = obj.project_render_rt_bounce_saturation
 	project_render_pbr_normal_maps = obj.project_render_pbr_normal_maps
 	project_render_pbr_normal_strength = obj.project_render_pbr_normal_strength
+	project_render_pbr_parallax = obj.project_render_pbr_parallax
+	project_render_pbr_parallax_depth = obj.project_render_pbr_parallax_depth
+	project_render_pbr_parallax_shadow = obj.project_render_pbr_parallax_shadow
 	project_render_pbr_pack_maps = obj.project_render_pbr_pack_maps
 	project_render_pbr_roughness = obj.project_render_pbr_roughness
 	project_render_pbr_metallic = obj.project_render_pbr_metallic

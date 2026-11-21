@@ -643,6 +643,26 @@ tab_collapse_end()
 			tab_collapse_end(false)
 		}
 		
+		// Parallax (height maps stored in the normal map alpha)
+		tab_control_switch()
+		draw_button_collapse("pbr_parallax", collapse_map[?"pbr_parallax"], action_project_render_pbr_parallax, project_render_pbr_parallax, "renderpbrparallax", "renderpbrparallaxtip")
+		tab_next()
+		
+		if (project_render_pbr_parallax && collapse_map[?"pbr_parallax"])
+		{
+			tab_collapse_start()
+			
+			tab_control_dragger()
+			draw_dragger("renderpbrparallaxdepth", dx, dy, dragger_width, round(project_render_pbr_parallax_depth * 100), .5, 0, 400, 25, 1, tab.render.tbx_pbr_parallax_depth, action_project_render_pbr_parallax_depth, null, true, false, "renderpbrparallaxdepthtip")
+			tab_next()
+			
+			tab_control_switch()
+			draw_switch("renderpbrparallaxshadow", dx, dy, project_render_pbr_parallax_shadow, action_project_render_pbr_parallax_shadow, "renderpbrparallaxshadowtip")
+			tab_next()
+			
+			tab_collapse_end(false)
+		}
+		
 		// Material multipliers
 		tab_control_dragger()
 		draw_dragger("renderpbrroughness", dx, dy, dragger_width, round(project_render_pbr_roughness * 100), .5, 0, 1000, 100, 1, tab.render.tbx_pbr_roughness, action_project_render_pbr_roughness, null, true, false, "renderpbrroughnesstip")

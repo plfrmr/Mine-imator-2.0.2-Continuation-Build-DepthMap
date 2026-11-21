@@ -7,6 +7,12 @@ function render_set_texture(tex, type = "")
 {
 	var sampler, scalex, scaley;
 	sampler = render_shader_obj.sampler_map[?"uTexture" + type]
+	
+	// Shaders without normal maps read the parallax height map from their own sampler,
+	// bound without changing the mipmap setting of the base texture
+	if (type = "Normal")
+		render_set_texture_height(tex)
+
 	scalex = 1
 	scaley = 1
 	

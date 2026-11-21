@@ -1,14 +1,28 @@
 /// rt_debug_export_start()
 /// @desc Developer: starts the export asked for in Data/rtdebug_open.txt ("hdrimage|file", "sdrimage|file" or "hdrmovie|file"),
-///		  raytraced, once nothing is loading anymore. Used to test exports without the save dialog.
+///		  raytraced (or in Render mode with a "render" prefix, like "rendersdrimage|file"), once nothing is loading anymore.
+///		  Used to test exports without the save dialog.
 
 function rt_debug_export_start()
 {
-	if (rt_debug_export = "" || window_state != "" || ds_priority_size(load_queue) > 0 || current_time < rt_debug_export_time)
+	if (rt_debug_export = "")
+		return 0
+	
+	// Wait until 10 seconds after loading is done, so timelines have switched to the loaded resources
+	if (window_state != "" || ds_priority_size(load_queue) > 0)
+	{
+		rt_debug_export_time = max(rt_debug_export_time, current_time + 10000)
+		return 0
+	}
+	
+	if (current_time < rt_debug_export_time)
 		return 0
 
 	var mode = rt_debug_export;
 	rt_debug_export = ""
+	var raytraced = (string_copy(mode, 1, 6) != "render");
+	if (!raytraced)
+		mode = string_delete(mode, 1, 6)
 	export_filename = rt_debug_export_file
 	log("Developer export", mode, export_filename)
 
@@ -23,12 +37,12 @@ function rt_debug_export_start()
 	if (string_pos("movie", mode) > 0)
 	{
 		popup_exportmovie.high_quality = true
-		popup_exportmovie.raytraced = true
+		popup_exportmovie.raytraced = raytraced
 		exportmovie_marker_previous = timeline_marker
 		exportmovie_format = "mp4"
 		exportmovie_framespersecond = popup_exportmovie.framespersecond
 		exportmovie_high_quality = true
-		exportmovie_raytraced = true
+		exportmovie_raytraced = raytraced
 		exportmovie_current_sound = null
 		exportmovie_marker_start = 0
 		exportmovie_marker_end = timeline_length
@@ -49,7 +63,7 @@ function rt_debug_export_start()
 	else
 	{
 		popup_exportimage.high_quality = true
-		popup_exportimage.raytraced = true
+		popup_exportimage.raytraced = raytraced
 		render_background = true
 		window_state = "export_image"
 	}

@@ -74,6 +74,14 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 	render_set_texture(texmat, "Material")
 	render_set_texture(texnormal, "Normal")
 	
+	// Parallax: tile size of the block sheets in UV, so the height map ray march stays inside each block's tile
+	var tilew, tileh, anitilew, anitileh;
+	tilew = 1 / minecraft_block_sheet_size[0]
+	tileh = 1 / minecraft_block_sheet_size[1]
+	anitilew = 1 / minecraft_block_animated_sheet_size[0]
+	anitileh = 1 / minecraft_block_animated_sheet_size[1]
+	render_set_uniform_vec2("uParallaxTile", tilew, tileh)
+	
 	// Rotate by 90 degrees for legacy support
 	if (rotate)
 		matrix_world_multiply_pre(matrix_create(point3D(0, size[Y] * block_size, 0), vec3(0, 0, 90), vec3(1)))
@@ -133,7 +141,9 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 			render_set_uniform("uEmissive", 0)
 		}
 		
-		vbuffer_render(vbuffer[e_block_depth.DEPTH0, e_block_vbuffer.ANIMATED])	
+		render_set_uniform_vec2("uParallaxTile", anitilew, anitileh)
+		vbuffer_render(vbuffer[e_block_depth.DEPTH0, e_block_vbuffer.ANIMATED])
+		render_set_uniform_vec2("uParallaxTile", tilew, tileh)
 		
 		if (res[1] != mc_res && texanimatsheet)
 		{
@@ -289,7 +299,9 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 			render_set_uniform("uEmissive", 0)
 		}
 		
+		render_set_uniform_vec2("uParallaxTile", anitilew, anitileh)
 		vbuffer_render(vbuffer[e_block_depth.DEPTH1, e_block_vbuffer.ANIMATED])
+		render_set_uniform_vec2("uParallaxTile", tilew, tileh)
 		
 		if (res[1] != mc_res && texanimatsheet)
 		{
@@ -338,7 +350,9 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 			render_set_uniform("uEmissive", 0)
 		}
 		
+		render_set_uniform_vec2("uParallaxTile", anitilew, anitileh)
 		vbuffer_render(vbuffer[e_block_depth.DEPTH2, e_block_vbuffer.ANIMATED])
+		render_set_uniform_vec2("uParallaxTile", tilew, tileh)
 		
 		if (res[1] != mc_res && texanimatsheet)
 		{
@@ -387,7 +401,14 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 				render_set_texture(texaninormal, "Normal")
 			}
 			
+			// Default water normal map isn't a block sheet
+			if (app.project_render_water_reflections)
+				render_set_uniform_vec2("uParallaxTile", 0, 0)
+			else
+				render_set_uniform_vec2("uParallaxTile", anitilew, anitileh)
+			
 			vbuffer_render(vbuffer[e_block_depth.DEPTH2, e_block_vbuffer.WATER])
+			render_set_uniform_vec2("uParallaxTile", tilew, tileh)
 			
 			render_set_uniform_color("uBlendColor", blend, shader_blend_alpha)
 			render_set_uniform_int("uIsWater", 0)
@@ -395,4 +416,6 @@ function render_world_block(vbuffer, res, rotate = false, size = undefined, temp
 	}
 	
 	#endregion
+	
+	render_set_uniform_vec2("uParallaxTile", 0, 0)
 }
