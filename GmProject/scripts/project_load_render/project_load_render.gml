@@ -72,6 +72,7 @@ function project_load_render(map)
 	project_render_time_limit = value_get_real(map[?"time_limit"], project_render_time_limit)
 	project_render_rt_sky_reflection = value_get_real(map[?"rt_sky_reflection"], project_render_rt_sky_reflection)
 	project_render_rt_clamp = value_get_real(map[?"rt_clamp"], project_render_rt_clamp)
+	project_render_rt_reflection_bump = value_get_real(map[?"rt_reflection_bump"], project_render_rt_reflection_bump)
 	
 	project_render_rt_samples = value_get_real(map[?"rt_samples"], project_render_rt_samples)
 	project_render_rt_precision = value_get_real(map[?"rt_precision"], project_render_rt_precision)

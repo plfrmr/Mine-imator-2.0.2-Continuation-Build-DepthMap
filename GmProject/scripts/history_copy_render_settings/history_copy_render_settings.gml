@@ -72,6 +72,7 @@ function history_copy_render_settings(obj)
 	project_render_time_limit = obj.project_render_time_limit
 	project_render_rt_sky_reflection = obj.project_render_rt_sky_reflection
 	project_render_rt_clamp = obj.project_render_rt_clamp
+	project_render_rt_reflection_bump = obj.project_render_rt_reflection_bump
 	
 	project_render_rt_samples = obj.project_render_rt_samples
 	project_render_rt_precision = obj.project_render_rt_precision

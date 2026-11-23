@@ -589,6 +589,11 @@ tab_collapse_end()
 				draw_meter("renderrtskyreflection", dx, dy, dw, round(project_render_rt_sky_reflection * 100), 0, 200, 100, 1, tab.render.tbx_rt_sky_reflection, action_project_render_rt_sky_reflection, "renderrtskyreflectiontip", text_get("rendercustombadge"), "custom")
 				tab_next()
 				
+				// Reflection bumpiness (CUSTOM)
+				tab_control_meter()
+				draw_meter("renderrtreflectionbump", dx, dy, dw, round(project_render_rt_reflection_bump * 100), 0, 100, 30, 1, tab.render.tbx_rt_reflection_bump, action_project_render_rt_reflection_bump, "renderrtreflectionbumptip", text_get("rendercustombadge"), "custom")
+				tab_next()
+				
 			}
 			else
 			{

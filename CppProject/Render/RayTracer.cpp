@@ -65,6 +65,7 @@ namespace CppProject
 			float color[4];		// bounce color saturation, glass tint strength, default emissive
 			float pbr[4];		// normal map strength, normal maps enabled, texture AO strength, parallax depth
 			float overkill[4];	// OVERKILL: light samples, paths per pixel, firefly clamp, Russian roulette start bounce
+			float horizon[4];	// Sky color at the horizon
 		};
 
 		struct LightData
@@ -1370,6 +1371,10 @@ namespace CppProject
 			constants.overkill[1] = (float)qBound<RealType>(1, Param("okpaths", 1), 16);
 			constants.overkill[2] = (float)qMax<RealType>(0, Param("overkill", 0) ? Param("okclamp", 10) : Param("rtclamp", 0));
 			constants.color[3] = (float)qMax<RealType>(0, Param("skyreflection", 1));
+			constants.horizon[0] = (float)Param("horizonr", Param("skyr", 0.5));
+			constants.horizon[1] = (float)Param("horizong", Param("skyg", 0.6));
+			constants.horizon[2] = (float)Param("horizonb", Param("skyb", 1));
+			constants.horizon[3] = (float)qBound<RealType>(0, Param("reflectionbump", 1), 1);
 			constants.overkill[3] = (float)qBound<RealType>(1, Param("okroulette", 3), 64);
 
 			constants.depth[2] = (float)Param("normalscale", 1);

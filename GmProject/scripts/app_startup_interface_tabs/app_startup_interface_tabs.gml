@@ -103,6 +103,7 @@ function app_startup_interface_tabs()
 			tbx_time_limit = new_textbox_decimals()
 			tbx_rt_sky_reflection = new_textbox_decimals()
 			tbx_rt_clamp = new_textbox_decimals()
+			tbx_rt_reflection_bump = new_textbox_decimals()
 			
 			tbx_rt_samples = new_textbox_decimals()
 			tbx_rt_precision = new_textbox_decimals()

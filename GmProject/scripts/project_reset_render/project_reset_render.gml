@@ -79,6 +79,7 @@ function project_reset_render()
 	project_render_time_limit = 0
 	project_render_rt_sky_reflection = 1
 	project_render_rt_clamp = 0
+	project_render_rt_reflection_bump = 0.3
 	
 	project_render_rt_samples = 128
 	project_render_rt_precision = 0.8

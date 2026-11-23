@@ -13,9 +13,11 @@ function render_hdr_surfaces(hdr)
 	// The post effects use render_surface_hdr[3] and [4] instead of them (see render_high_get_apply_surf).
 	render_surface_material = surface_set_hdr(render_surface_material, false, true)
 	render_surface_diffuse = surface_set_hdr(render_surface_diffuse, false, true)
-	render_surface_sample_expo = surface_set_hdr(render_surface_sample_expo, hdr, false)
-	render_surface_sample_dec = surface_set_hdr(render_surface_sample_dec, hdr, false)
-	render_surface_sample_alpha = surface_set_hdr(render_surface_sample_alpha, hdr, false)
+	
+	// The sample sums are always float: in 8-bit they overflow after 255 bright samples, which dimmed long renders
+	render_surface_sample_expo = surface_set_hdr(render_surface_sample_expo, true, false)
+	render_surface_sample_dec = surface_set_hdr(render_surface_sample_dec, true, false)
+	render_surface_sample_alpha = surface_set_hdr(render_surface_sample_alpha, true, false)
 
 	if (hdr)
 		render_target = surface_set_hdr(render_target, true, true)
