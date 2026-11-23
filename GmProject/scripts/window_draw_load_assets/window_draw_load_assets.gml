@@ -57,8 +57,20 @@ function window_draw_load_assets()
 	draw_sprite(spr_load_assets, 0, xoff + 95, yoff + 207)
 	
 	draw_label("Mine-imator " + string(mineimator_version), xoff + 95, yoff + 289, fa_middle, fa_bottom, c_text_secondary, a_text_secondary, font_heading)
-	draw_label(string(string_upper(mineimator_version_sub)), xoff + 95, yoff + 289 + 12, fa_middle, fa_bottom, c_text_secondary, a_text_secondary, font_subheading)
-	draw_label(string(string_upper(mineimator_version_extra)), xoff + 95, yoff + 289 + (mineimator_version_sub = "" ? 16 : 26), fa_middle, fa_bottom, c_text_tertiary, a_text_tertiary, font_subheading)
+	
+	// A long mod name doesn't fit the side panel: put its version number in front of the extra line ("1.0.15 ALPHA 1")
+	var versionsub, versionextra, versionspace;
+	versionsub = string_upper(mineimator_version_sub)
+	versionextra = string_upper(mineimator_version_extra)
+	versionspace = string_last_pos(" ", versionsub)
+	if (versionspace > 0 && string_width_font(versionsub, font_subheading) > 176)
+	{
+		versionextra = string_delete(versionsub, 1, versionspace) + (versionextra != "" ? " " + versionextra : "")
+		versionsub = string_copy(versionsub, 1, versionspace - 1)
+	}
+	
+	draw_label(versionsub, xoff + 95, yoff + 289 + 12, fa_middle, fa_bottom, c_text_secondary, a_text_secondary, font_subheading)
+	draw_label(versionextra, xoff + 95, yoff + 289 + (versionsub = "" ? 16 : 26), fa_middle, fa_bottom, c_text_tertiary, a_text_tertiary, font_subheading)
 	draw_label(text_get("startuploadingassets", app.setting_minecraft_assets_version, floor(load_assets_progress * 100)), xoff + 95, yoff + 437, fa_middle, fa_bottom, c_text_tertiary, a_text_tertiary, font_caption)
 	
 	draw_gradient(xoff + 190, yoff, shadow_size * 2, screenhei, c_black, shadow_alpha * 2, 0, 0, shadow_alpha * 2)
