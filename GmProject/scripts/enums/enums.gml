@@ -862,7 +862,8 @@ function enums()
 		FLAT,
 		SHADED,
 		RENDER,
-		RAYTRACED
+		RAYTRACED,
+		OVERKILL
 	}
 	
 	// Menus

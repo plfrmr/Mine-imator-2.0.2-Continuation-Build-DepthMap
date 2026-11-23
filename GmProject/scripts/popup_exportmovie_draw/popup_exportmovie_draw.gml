@@ -112,6 +112,11 @@ function popup_exportmovie_draw()
 	draw_switch("exportmovieraytraced", dx, dy, popup.raytraced, action_toolbar_exportmovie_raytraced, "exportmovieraytracedtip", false, text_get("renderraytracingbadge"), "fire")
 	tab_next()
 	
+	// OVERKILL
+	tab_control_switch()
+	draw_switch("exportmovieoverkill", dx, dy, popup.overkill, action_toolbar_exportmovie_overkill, "exportmovieoverkilltip", false, text_get("renderoverkillbadge"), "overkill")
+	tab_next()
+	
 	// HDR10
 	tab_control_switch()
 	draw_switch("exportmoviehdr10", dx, dy, popup.hdr10, action_toolbar_exportmovie_hdr10, "exportmoviehdr10tip", false, text_get("renderhdrbadge"), "hdr")

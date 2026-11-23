@@ -72,7 +72,7 @@ function app_startup_interface()
 		{
 			project_load(rtopen)
 			var rtmode = rt_debug_open_mode();
-			view_main.quality = ((string_copy(rtmode, 1, 6) = "render" || rtmode = "depthmap") ? e_view_mode.RENDER : e_view_mode.RAYTRACED)
+			view_main.quality = (rtmode = "overkill" ? e_view_mode.OVERKILL : ((string_copy(rtmode, 1, 6) = "render" || rtmode = "depthmap") ? e_view_mode.RENDER : e_view_mode.RAYTRACED))
 			if (rtmode = "depthmap")
 				project_render_pass = e_render_pass.DEPTH_MAP
 

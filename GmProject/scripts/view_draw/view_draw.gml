@@ -238,6 +238,11 @@ function view_draw(view)
 	
 	dx -= dw
 	
+	// "OVERKILL" quality (path tracing)
+	if (draw_button_icon("viewmodeoverkill", dx, dy, dw, dh, view.quality = e_view_mode.OVERKILL, icons.ROCKETSHIP, null, false, "viewmodeoverkill"))
+		view_set_quality(view, e_view_mode.OVERKILL)
+	dx -= dw + padding
+	
 	// "Raytraced" quality
 	if (draw_button_icon("viewmoderaytraced", dx, dy, dw, dh, view.quality = e_view_mode.RAYTRACED, icons.FIRE, null, false, "viewmoderaytraced"))
 		view_set_quality(view, e_view_mode.RAYTRACED)
@@ -446,6 +451,10 @@ function view_draw(view)
 			window_busy = ""
 		
 		draw_surface_size(view.surface, content_x, content_y, content_width, content_height)
+		
+		// Safe area guides (CUSTOM)
+		if (setting_view_safe_areas)
+			view_draw_safe_areas(content_x, content_y, content_width, content_height)
 		
 		if (view.grid)
 		{
@@ -866,7 +875,14 @@ function view_draw(view)
 		var infotext;
 		
 		if (view_render_real_time)
-			infotext = text_get("viewrenderfps", string(fps), max(1, render_samples), (view.quality = e_view_mode.RAYTRACED ? project_render_rt_samples : project_render_samples))
+		{
+			var totalsamples = (view.quality = e_view_mode.OVERKILL ? project_render_ok_samples : (view.quality = e_view_mode.RAYTRACED ? project_render_rt_samples : project_render_samples));
+			infotext = text_get("viewrenderfps", string(fps), max(1, render_samples), totalsamples)
+			
+			// Render time estimate (CUSTOM): one sample is rendered per frame
+			if (setting_view_render_eta && render_samples < totalsamples && fps > 0)
+				infotext += "  " + text_get("viewrendertimeleft", render_eta_text((totalsamples - max(1, render_samples)) / fps))
+		}
 		else
 			infotext = ""
 		

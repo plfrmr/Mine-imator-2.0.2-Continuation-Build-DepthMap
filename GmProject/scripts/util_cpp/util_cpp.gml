@@ -568,6 +568,32 @@ function surface_debug_stats(surf, label)
 {
 }
 
+/// CppSeparate void model_capture_begin()
+/// Starts recording every drawn mesh for model_export_json.
+function model_capture_begin()
+{
+}
+
+/// CppSeparate void model_capture_pause(BoolType)
+/// Skips what's drawn while paused (the ground and clouds) in the model capture.
+function model_capture_pause(pause)
+{
+}
+
+/// CppSeparate void model_capture_end()
+/// Stops recording drawn meshes.
+function model_capture_end()
+{
+}
+
+/// CppSeparate StringType model_export_json(StringType, StringType, StringType, RealType, BoolType, BoolType)
+/// Writes the recorded meshes as a Minecraft JSON model and texture: folder, name, namespace, size in blocks, free rotation,
+/// resource pack. Returns a summary, or a text starting with "error:".
+function model_export_json(folder, name, ns, size, freerotation, resourcepack)
+{
+	return "error: needs the C++ version"
+}
+
 /// CppSeparate void movie_set_hdr(BoolType, RealType, RealType)
 /// Makes the next movie_start encode HDR10 (10-bit H.264, PQ, Rec.2020) when the format uses H.264 (MP4, MOV).
 function movie_set_hdr(enable, paperwhite, peak)

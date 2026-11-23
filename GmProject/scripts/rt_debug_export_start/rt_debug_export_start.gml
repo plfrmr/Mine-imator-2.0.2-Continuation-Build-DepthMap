@@ -23,8 +23,27 @@ function rt_debug_export_start()
 	var raytraced = (string_copy(mode, 1, 6) != "render");
 	if (!raytraced)
 		mode = string_delete(mode, 1, 6)
+	var overkill = (string_copy(mode, 1, 2) = "ok"); // "okimage|file", "okhdrmovie|file"...: OVERKILL
+	if (overkill)
+		mode = string_delete(mode, 1, 2)
 	export_filename = rt_debug_export_file
 	log("Developer export", mode, export_filename)
+
+	// "model|file.json": Minecraft model export (resource pack), "modelflat|file.json": just the JSON and PNG
+	if (string_copy(mode, 1, 5) = "model")
+	{
+		popup_exportmodel.resource_pack = (mode != "modelflat")
+		popup_exportmodel.free_rotation = (mode != "modelclassic") // Classic 22.5/45 degree rotations
+
+		// "modelobjects|file.json": only characters (and their body parts), through Only selected objects
+		popup_exportmodel.selected_only = (mode = "modelobjects")
+		if (mode = "modelobjects")
+			with (obj_timeline)
+				selected = (type = e_tl_type.CHARACTER || type = e_tl_type.BODYPART)
+
+		export_model(export_filename)
+		return 0
+	}
 
 	render_hidden = false
 	render_watermark = false
@@ -43,6 +62,8 @@ function rt_debug_export_start()
 		exportmovie_framespersecond = popup_exportmovie.framespersecond
 		exportmovie_high_quality = true
 		exportmovie_raytraced = raytraced
+		popup_exportmovie.overkill = overkill
+		exportmovie_overkill = overkill
 		exportmovie_current_sound = null
 		exportmovie_marker_start = 0
 		exportmovie_marker_end = timeline_length
@@ -64,6 +85,7 @@ function rt_debug_export_start()
 	{
 		popup_exportimage.high_quality = true
 		popup_exportimage.raytraced = raytraced
+		popup_exportimage.overkill = overkill
 		render_background = true
 		window_state = "export_image"
 	}

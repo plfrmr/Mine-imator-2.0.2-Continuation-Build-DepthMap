@@ -584,6 +584,11 @@ tab_collapse_end()
 				draw_dragger("renderrtreflectionbounces", dx, dy, dragger_width, project_render_rt_reflection_bounces, .1, 0, 16, 1, 1, tab.render.tbx_rt_reflection_bounces, action_project_render_rt_reflection_bounces, null, true, false, "renderrtreflectionbouncestip", rtbadge, "fire_small")
 				tab_next()
 				
+				// Sky reflections (CUSTOM)
+				tab_control_meter()
+				draw_meter("renderrtskyreflection", dx, dy, dw, round(project_render_rt_sky_reflection * 100), 0, 200, 100, 1, tab.render.tbx_rt_sky_reflection, action_project_render_rt_sky_reflection, "renderrtskyreflectiontip", text_get("rendercustombadge"), "custom")
+				tab_next()
+				
 			}
 			else
 			{
@@ -602,12 +607,78 @@ tab_collapse_end()
 			tab_control_switch()
 			draw_switch("renderrtspecular", dx, dy, project_render_rt_specular, action_project_render_rt_specular, "renderrtspeculartip", false, rtbadge, "fire_small")
 			tab_next()
+
+			// Denoise (CUSTOM)
+			var custombadge = text_get("rendercustombadge");
 			
+			// Firefly clamp (CUSTOM)
+			tab_control_dragger()
+			draw_dragger("renderrtclamp", dx, dy, dragger_width, project_render_rt_clamp, .1, 0, no_limit, 0, 0.1, tab.render.tbx_rt_clamp, action_project_render_rt_clamp, null, true, false, "renderrtclamptip", custombadge, "custom")
+			tab_next()
+			
+			tab_control_switch()
+			draw_button_collapse("rt_hw_denoise", collapse_map[?"rt_hw_denoise"], action_project_render_rt_hw_denoise, project_render_rt_hw_denoise, "renderrthwdenoise", "renderrthwdenoisetip", custombadge, "custom")
+			tab_next()
+
+			if (project_render_rt_hw_denoise && collapse_map[?"rt_hw_denoise"])
+			{
+				tab_collapse_start()
+
+				tab_control_meter()
+				draw_meter("renderrthwdenoisesize", dx, dy, dw, round(project_render_rt_hw_denoise_size * 100), 0, 300, 100, 1, tab.render.tbx_rt_hw_denoise_size, action_project_render_rt_hw_denoise_size, "renderrthwdenoisesizetip", custombadge, "custom")
+				tab_next()
+
+				tab_collapse_end(false)
+			}
+
 		}
-		
+
 		tab_collapse_end()
 	}
 	
+	// OVERKILL (path traced view mode and exports)
+	var okbadge = text_get("renderoverkillbadge");
+
+	tab_control_switch()
+	draw_button_collapse("overkill", collapse_map[?"overkill"], null, true, "renderoverkill", "renderoverkilltip", okbadge, "overkill")
+	tab_next()
+
+	if (collapse_map[?"overkill"])
+	{
+		tab_collapse_start()
+
+		tab_control_dragger()
+		draw_dragger("renderoksamples", dx, dy, dragger_width, project_render_ok_samples, 1, 1, 65536, 512, 1, tab.render.tbx_ok_samples, action_project_render_ok_samples, null, true, false, "renderoksamplestip", okbadge, "overkill")
+		tab_next()
+
+		tab_control_dragger()
+		draw_dragger("renderokbounces", dx, dy, dragger_width, project_render_ok_bounces, .1, 1, 16, 6, 1, tab.render.tbx_ok_bounces, action_project_render_ok_bounces, null, true, false, "renderokbouncestip", okbadge, "overkill")
+		tab_next()
+
+		tab_control_dragger()
+		draw_dragger("renderoklightsamples", dx, dy, dragger_width, project_render_ok_light_samples, .1, 1, 16, 1, 1, tab.render.tbx_ok_light_samples, action_project_render_ok_light_samples, null, true, false, "renderoklightsamplestip", okbadge, "overkill")
+		tab_next()
+
+		tab_control_dragger()
+		draw_dragger("renderokpaths", dx, dy, dragger_width, project_render_ok_paths, .1, 1, 16, 1, 1, tab.render.tbx_ok_paths, action_project_render_ok_paths, null, true, false, "renderokpathstip", okbadge, "overkill")
+		tab_next()
+
+		tab_control_dragger()
+		draw_dragger("renderokclamp", dx, dy, dragger_width, project_render_ok_clamp, .1, 0, no_limit, 10, 0.1, tab.render.tbx_ok_clamp, action_project_render_ok_clamp, null, true, false, "renderokclamptip", okbadge, "overkill")
+		tab_next()
+
+		tab_control_dragger()
+		draw_dragger("renderokroulette", dx, dy, dragger_width, project_render_ok_roulette, .1, 1, 16, 3, 1, tab.render.tbx_ok_roulette, action_project_render_ok_roulette, null, true, false, "renderokroulettetip", okbadge, "overkill")
+		tab_next()
+
+		tab_collapse_end()
+	}
+
+	// Time limit per frame (CUSTOM)
+	tab_control_dragger()
+	draw_dragger("rendertimelimit", dx, dy, dragger_width, project_render_time_limit, .1, 0, no_limit, 0, 0.1, tab.render.tbx_time_limit, action_project_render_time_limit, null, true, false, "rendertimelimittip", text_get("rendercustombadge"), "custom")
+	tab_next()
+
 	// PBR materials (material and normal maps from resource packs)
 	tab_control_switch()
 	draw_button_collapse("pbr", collapse_map[?"pbr"], null, true, "renderpbr", "renderpbrtip")

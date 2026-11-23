@@ -16,6 +16,7 @@
 #define FLAG_BOUNCE_LIGHTS	16
 #define FLAG_SHADOWS		32
 #define FLAG_TINTED_SHADOWS	64
+#define FLAG_OVERKILL		128	// OVERKILL mode: full path tracing instead of the Raytraced mode approximations
 
 #define LIGHT_SUN	0
 #define LIGHT_POINT	1
@@ -40,8 +41,9 @@ cbuffer Constants : register(b0)
 	float4 uRay;		// max ray distance, ray offset, sun softness (radians), light softness
 	float4 uMisc;		// alpha cutout threshold, specular highlight strength, debug view, parallax self-shadowing (1/0)
 	float4 uJitter;		// xy = TAA jitter of the G-buffer in normalized device coordinates
-	float4 uColor;		// bounce color saturation, glass tint strength, default emissive, unused
+	float4 uColor;		// bounce color saturation, glass tint strength, default emissive, sky reflection strength
 	float4 uPBR;		// normal map strength, normal maps enabled (1/0), texture AO strength, parallax depth (0 = off)
+	float4 uOverkill;	// OVERKILL: light samples per pixel, paths per pixel, firefly clamp (0 = off, also used by Raytraced mode), Russian roulette start bounce
 };
 
 struct Light
@@ -259,6 +261,9 @@ struct Surface
 	float alpha;
 	float emissive;
 	float ao;		// Texture ambient occlusion (LabPBR normal map blue channel), 1 = none
+	float roughness;	// Material of the hit (used by OVERKILL for reflections of reflections)
+	float metallic;
+	float f0;		// Reflectance at normal incidence of non-metals
 	float3x3 objectToWorld;
 	Parallax pom;
 };
@@ -555,15 +560,29 @@ Surface FetchSurface(uint instanceId, uint primIndex, float2 bary, float3x4 obje
 	if (pom.tex != NO_TEXTURE && (pom.side.x != 0.0 || pom.side.y != 0.0))
 		normal = normalize(pom.side.x * normalize(pom.gradU) + pom.side.y * normalize(pom.gradV));
 
-	// Emission: material map (LabPBR alpha, SEUS blue) or the object/vertex value, scaled by Default emissive like the rasterizer
+	// Emission: material map (LabPBR alpha, SEUS blue) or the object/vertex value, scaled by Default emissive like the rasterizer.
+	// Roughness and metal: the object's values or the material map (LabPBR: R = smoothness, G = F0 or metal from 230;
+	// SEUS: R = smoothness, G = metal).
 	float emissive = max(inst.emissive, vertexEmissive * uColor.z);
+	float roughness = inst.roughness, metallic = inst.metallic, f0 = 0.04;
 	if (inst.matTexIndex != NO_TEXTURE && inst.matFormat != 0)
 	{
 		float4 m = SampleTexture(inst.matTexIndex, inst.matUvRect, uv, float4(0.0, 0.0, 0.0, 1.0));
 		if (inst.matFormat == MATERIAL_LABPBR)
+		{
 			emissive = (m.a < 1.0 ? m.a / 0.9961 : 0.0) * uColor.z;
+			roughness = (1.0 - m.r) * (1.0 - m.r);
+			if (m.g >= 229.5 / 255.0)
+				metallic = 1.0;
+			else
+				f0 = max(m.g, 0.02);
+		}
 		else if (inst.matFormat == MATERIAL_SEUS)
+		{
 			emissive = m.b * uColor.z;
+			roughness = 1.0 - m.r;
+			metallic = m.g;
+		}
 	}
 
 	Surface s;
@@ -574,6 +593,9 @@ Surface FetchSurface(uint instanceId, uint primIndex, float2 bary, float3x4 obje
 	s.alpha = tex.a * color.a * inst.blendColor.a;
 	s.emissive = emissive;
 	s.ao = ao;
+	s.roughness = saturate(roughness);
+	s.metallic = saturate(metallic);
+	s.f0 = f0;
 	s.objectToWorld = o2w;
 	s.pom = pom;
 	return s;
@@ -665,6 +687,30 @@ bool TraceClosest(float3 origin, float3 dir, float tMax, out Surface s)
 	{
 		if (q.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE &&
 			CandidateAlpha(q.CandidateInstanceID(), q.CandidatePrimitiveIndex(), q.CandidateTriangleBarycentrics()) >= uMisc.x)
+			q.CommitNonOpaqueTriangleHit();
+	}
+
+	if (q.CommittedStatus() != COMMITTED_TRIANGLE_HIT)
+	{
+		s = (Surface)0;
+		return false;
+	}
+
+	float t = q.CommittedRayT();
+	s = FetchSurface(q.CommittedInstanceID(), q.CommittedPrimitiveIndex(), q.CommittedTriangleBarycentrics(),
+					 q.CommittedObjectToWorld3x4(), origin + dir * t, dir);
+	return true;
+}
+
+// Finds the closest surface along the ray, including see-through ones (stained glass) down to the given opacity
+bool TraceClosestAlpha(float3 origin, float3 dir, float tMax, float minAlpha, out Surface s)
+{
+	RayQuery<RAY_FLAG_NONE> q;
+	q.TraceRayInline(gScene, BaseRayFlags(), 0xFF, MakeRay(origin, dir, tMax));
+	while (q.Proceed())
+	{
+		if (q.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE &&
+			CandidateAlpha(q.CandidateInstanceID(), q.CandidatePrimitiveIndex(), q.CandidateTriangleBarycentrics()) >= minAlpha)
 			q.CommitNonOpaqueTriangleHit();
 	}
 
@@ -823,6 +869,197 @@ float3 TraceRadiance(float3 origin, float3 dir, uint bounces, inout uint seed)
 }
 
 // ----------------------------------------------------------------------------------------------------------------------
+// OVERKILL: path tracing
+//
+// Every bounce samples the lights directly (next event estimation, with soft and tinted shadows), picks a glossy reflection or
+// a diffuse bounce by the surface's Fresnel reflectance (so reflective blocks reflect each other, metals tint their reflections),
+// adds glowing surfaces and ends in the sky. Paths end early by Russian roulette once they carry little light, and very
+// bright rare samples (fireflies) are clamped so the image settles quickly.
+
+float Luma(float3 c)
+{
+	return dot(c, float3(0.2126, 0.7152, 0.0722));
+}
+
+float3 FresnelSchlick(float3 f0, float cosTheta)
+{
+	return f0 + (1.0 - f0) * pow(1.0 - saturate(cosTheta), 5.0);
+}
+
+float3 ClampFirefly(float3 c)
+{
+	float l = Luma(c);
+	return (uOverkill.z > 0.0 && l > uOverkill.z) ? c * (uOverkill.z / l) : c;
+}
+
+// The sky as seen in reflections (scaled by the Sky reflections setting)
+float3 SkyRadiance()
+{
+	return ToLinear(uSky.rgb) * uColor.w;
+}
+
+// GGX reflection weight for a sampled half vector (importance sampled by the normal distribution)
+float3 GGXSampleWeight(float3 f0, float3 N, float3 V, float3 L, float3 H, float roughness)
+{
+	float NdotV = max(dot(N, V), 0.001), NdotL = max(dot(N, L), 0.001);
+	float NdotH = max(dot(N, H), 0.001), VdotH = max(dot(V, H), 0.001);
+	return FresnelSchlick(f0, VdotH) * GeometrySmith(NdotV, NdotL, roughness) * VdotH / (NdotV * NdotH);
+}
+
+// Light from the open sky along a ray. Smooth reflections show the sky itself; rough reflections and diffuse bounces get the
+// same sky light as Raytraced mode's ambient (the displayed sky color is as bright as a sunlit wall, far too bright to light
+// every rough surface with).
+float3 OverkillSky(bool specular, float roughness)
+{
+	return specular ? lerp(SkyRadiance(), EnvironmentLight(), saturate(roughness * 2.0)) : EnvironmentLight();
+}
+
+// Light arriving along a ray, following it through up to "bounces" surfaces. For reflection rays, "roughness" is the roughness
+// of the surface that reflected it.
+float3 OverkillPath(float3 origin, float3 dir, uint bounces, bool specularRay, float roughness, inout uint seed)
+{
+	float3 radiance = float3(0.0, 0.0, 0.0);
+	float3 throughput = float3(1.0, 1.0, 1.0);
+	bool lastSpecular = specularRay;
+	float lastRoughness = roughness;
+	uint rouletteStart = (uint)max(uOverkill.w, 1.0);
+	bool seeThrough = (uSize.w & FLAG_ALPHA_CUTOUT) != 0;
+	uint layers = 0;
+
+	uint b = 0;
+	[loop]
+	while (b < bounces)
+	{
+		Surface s;
+		if (!TraceClosestAlpha(origin, dir, uRay.x, seeThrough ? 0.01 : uMisc.x, s))
+		{
+			radiance += throughput * OverkillSky(lastSpecular, lastRoughness);
+			break;
+		}
+
+		// See-through surface (stained glass): blend in its lit color by its opacity and continue behind it, the same way the
+		// rasterizer draws it when looking at it directly. It doesn't count as a bounce.
+		if (seeThrough && s.alpha < uMisc.x)
+		{
+			if (layers >= 8)
+				break;
+			float3 unusedSpec = float3(0.0, 0.0, 0.0);
+			float3 glassLight = DirectLight(s.pos, s.normal, s.geoNormal, s.pom, -dir, 1.0, float3(0.0, 0.0, 0.0), false, seed, unusedSpec);
+			radiance += throughput * s.alpha * s.albedo * (glassLight + EnvironmentLight() + s.emissive * uStrengths.y);
+			throughput *= (1.0 - s.alpha);
+			origin = s.pos + dir * max(uRay.y, 0.01);
+			layers++;
+			continue;
+		}
+
+		float3 V = -dir;
+		float roughness = max(s.roughness, 0.02);
+		float NdotV = max(dot(s.normal, V), 0.001);
+		float3 f0 = lerp(float3(s.f0, s.f0, s.f0), s.albedo, s.metallic);
+		float3 F = FresnelSchlick(f0, NdotV);
+		float3 diffuseColor = s.albedo * (1.0 - s.metallic) * (1.0 - Luma(F));
+
+		// Glowing surface
+		radiance += throughput * s.albedo * s.emissive * uStrengths.y;
+
+		// Lights (diffuse and glossy highlights)
+		float3 spec = float3(0.0, 0.0, 0.0);
+		float3 direct = DirectLight(s.pos, s.normal, s.geoNormal, s.pom, V, roughness, F, true, seed, spec);
+		radiance += throughput * (diffuseColor * direct + spec);
+
+		// Continue as a glossy reflection or a diffuse bounce
+		float specProb = clamp(max(Luma(F), s.metallic), 0.05, 0.95);
+		if (Rand(seed) < specProb)
+		{
+			float3 H = SampleGGX(s.normal, roughness, seed);
+			float3 L = reflect(dir, H);
+			if (dot(L, s.normal) <= 0.0 || dot(L, s.geoNormal) <= 0.0)
+				break;
+			throughput *= GGXSampleWeight(f0, s.normal, V, L, H, roughness) / specProb;
+			dir = L;
+			lastSpecular = true;
+			lastRoughness = roughness;
+		}
+		else
+		{
+			throughput *= diffuseColor / (1.0 - specProb);
+			dir = SampleBounce(s.normal, s.geoNormal, seed);
+			lastSpecular = false;
+		}
+		origin = s.pos + s.geoNormal * uRay.y;
+
+		// Russian roulette: paths that carry little light end early, the ones that survive count for more
+		float p = max(throughput.r, max(throughput.g, throughput.b));
+		if (p < 0.0005)
+			break;
+		if (b + 1 >= rouletteStart)
+		{
+			float q = clamp(p, 0.05, 0.95);
+			if (Rand(seed) > q)
+				break;
+			throughput /= q;
+		}
+
+		b++;
+	}
+
+	return radiance;
+}
+
+// Shades the camera's surface with path tracing: diffuse light into "light" (multiplied by the surface color in the composite)
+// and reflections and highlights into "specular".
+void OverkillShade(float3 pos, float3 normal, float3 geoNormal, Parallax pom, float3 viewDir, float roughness, float metallic,
+				   float fresnel, float3 albedo, float ao, inout uint seed, out float3 light, out float3 specular)
+{
+	uint lightSamples = max(1u, (uint)uOverkill.x);
+	uint paths = max(1u, (uint)uOverkill.y);
+	float NdotV = max(dot(normal, viewDir), 0.001);
+
+	// Every surface reflects at grazing angles (at least 4% like most materials), metals tint their reflections
+	float3 f0 = max(fresnel, 0.04) * lerp(float3(1.0, 1.0, 1.0), albedo, metallic);
+	float3 F = FresnelSchlick(f0, NdotV);
+	float kd = (1.0 - metallic) * (1.0 - Luma(F)); // Light that isn't reflected enters the surface and comes out diffuse
+
+	// Lights, several samples for smooth soft shadows
+	float3 direct = float3(0.0, 0.0, 0.0);
+	specular = float3(0.0, 0.0, 0.0);
+	for (uint i = 0; i < lightSamples; i++)
+		direct += DirectLight(pos, normal, geoNormal, pom, viewDir, roughness, F, (uSize.w & FLAG_SPECULAR) != 0, seed, specular);
+	direct /= (float)lightSamples;
+	specular /= (float)lightSamples;
+
+	// Bounced light and reflections, each followed through the scene
+	float3 origin = pos + geoNormal * uRay.y;
+	float3 indirect = float3(0.0, 0.0, 0.0);
+	float3 reflected = float3(0.0, 0.0, 0.0);
+	for (uint p = 0; p < paths; p++)
+	{
+		if (kd > 0.001 && uCounts.y > 0)
+			indirect += ClampFirefly(OverkillPath(origin, SampleBounce(normal, geoNormal, seed), uCounts.y, false, 1.0, seed));
+
+		if ((uSize.w & FLAG_REFLECTIONS) && uCounts.z > 0)
+		{
+			float3 H = SampleGGX(normal, roughness, seed);
+			float3 L = reflect(-viewDir, H);
+			if (dot(L, normal) > 0.0 && dot(L, geoNormal) > 0.0)
+			{
+				float3 w = GGXSampleWeight(f0, normal, viewDir, L, H, roughness);
+				if (Luma(w) > 0.0005)
+					reflected += ClampFirefly(w * OverkillPath(origin, L, uCounts.z, true, roughness, seed));
+			}
+		}
+	}
+	indirect /= (float)paths;
+	reflected /= (float)paths;
+
+	if (uCounts.y == 0)
+		indirect = EnvironmentLight();
+
+	light = (direct + indirect * ao * uStrengths.x) * kd;
+	specular += reflected * uStrengths.z;
+}
+
+// ----------------------------------------------------------------------------------------------------------------------
 
 [numthreads(8, 8, 1)]
 void main(uint3 id : SV_DispatchThreadID)
@@ -948,6 +1185,30 @@ void main(uint3 id : SV_DispatchThreadID)
 		}
 		else if (debugView == 7) // Raw G-buffer normal as stored by the rasterizer
 			c = UnpackNormal(gNormal[id.xy]) * 0.5 + 0.5;
+		else if (debugView == 8) // G-buffer material: red = roughness, green = metallic, blue = fresnel
+			c = float3(material.r, material.g, material.b);
+		else if (debugView == 9 || debugView == 10) // OVERKILL bounced light (9) or reflections (10), without the lights
+		{
+			float3 f0 = max(fresnel, 0.04) * specTint;
+			float3 origin = pos + geoNormal * uRay.y;
+			if (debugView == 9)
+				c = OverkillPath(origin, SampleBounce(normal, geoNormal, seed), max(uCounts.y, 1u), false, 1.0, seed);
+			else
+			{
+				float3 H = SampleGGX(normal, roughness, seed);
+				float3 L = reflect(-viewDir, H);
+				if (dot(L, normal) > 0.0 && dot(L, geoNormal) > 0.0)
+					c = GGXSampleWeight(f0, normal, viewDir, L, H, roughness) * OverkillPath(origin, L, max(uCounts.z, 1u), true, roughness, seed);
+			}
+		}
+		else if (debugView == 11) // Material at the first bounce hit: red = roughness, green = metallic, blue = f0 * 10
+		{
+			Surface s;
+			if (TraceClosest(pos + geoNormal * uRay.y, SampleBounce(normal, geoNormal, seed), uRay.x, s))
+				c = float3(s.roughness, s.metallic, s.f0 * 10.0);
+			else
+				c = float3(0.0, 0.0, 0.0);
+		}
 		else if (debugView == 4) // The scene as seen by the ray tracer from the camera
 		{
 			Surface s;
@@ -956,6 +1217,16 @@ void main(uint3 id : SV_DispatchThreadID)
 		}
 		gOutLight[id.xy] = float4(0.0, 0.0, 0.0, 1.0);
 		gOutSpecular[id.xy] = float4(c, 1.0);
+		return;
+	}
+
+	// OVERKILL: path tracing
+	if (uSize.w & FLAG_OVERKILL)
+	{
+		float3 okLight, okSpecular;
+		OverkillShade(pos, normal, geoNormal, primaryPom, viewDir, roughness, metallic, fresnel, albedo, primaryAO, seed, okLight, okSpecular);
+		gOutLight[id.xy] = float4(okLight, 1.0);
+		gOutSpecular[id.xy] = float4(okSpecular, 1.0);
 		return;
 	}
 
@@ -983,7 +1254,7 @@ void main(uint3 id : SV_DispatchThreadID)
 			}
 			if (uCounts.y > 1)
 				bounce += TraceRadiance(s.pos + s.geoNormal * uRay.y, SampleBounce(s.normal, s.geoNormal, seed), uCounts.y - 1, seed);
-			light += BounceColor(s.albedo) * bounce * uStrengths.x * primaryAO;
+			light += ClampFirefly(BounceColor(s.albedo) * bounce * uStrengths.x * primaryAO);
 		}
 	}
 	else
@@ -1011,9 +1282,9 @@ void main(uint3 id : SV_DispatchThreadID)
 				reflected = s.albedo * hitLight;
 			}
 			else
-				reflected = ToLinear(uSky.rgb);
+				reflected = SkyRadiance();
 
-			specular += reflected * uStrengths.z * fresnel * specTint;
+			specular += ClampFirefly(reflected * uStrengths.z * fresnel * specTint);
 		}
 	}
 

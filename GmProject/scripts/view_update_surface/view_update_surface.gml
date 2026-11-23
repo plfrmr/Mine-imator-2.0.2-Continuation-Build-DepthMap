@@ -10,7 +10,8 @@ function view_update_surface(view, cam)
 	render_lights = (view.quality != e_view_mode.FLAT)
 	render_particles = view.particles
 	render_effects = view.effects
-	render_raytraced = (view.quality = e_view_mode.RAYTRACED)
+	render_overkill = (view.quality = e_view_mode.OVERKILL)
+	render_raytraced = (view.quality = e_view_mode.RAYTRACED || render_overkill)
 	render_quality = (render_raytraced ? e_view_mode.RENDER : view.quality)
 	render_watermark = (settings.show && settings.program.show && setting_watermark_custom && collapse_map[?"watermark"])
 	render_start(view.surface, cam, content_width, content_height)
@@ -116,6 +117,7 @@ function view_update_surface(view, cam)
 	
 	view.surface = render_done()
 	render_raytraced = false
+	render_overkill = false
 	render_lights = true
 	render_particles = true
 }

@@ -36,6 +36,21 @@ namespace CppProject
 		// Whether the scene must be captured again (no scene yet, or its geometry was freed).
 		BoolType NeedsCapture();
 
+		// Capture for exporting the scene as a Minecraft model (see ModelExport.cpp): every drawn mesh with its transform,
+		// texture and tint. Works on its own, also without hardware ray tracing.
+		struct ExportDraw
+		{
+			void* mesh;			// Mesh<>*
+			Matrix world;
+			IntType texId;
+			float uvRect[4];	// Texture page location: uv = rect.xy + frac(uv) * rect.zw
+			float blendColor[4];
+		};
+		void ExportCaptureBegin();
+		void ExportCaptureEnd();
+		void ExportCapturePause(BoolType pause); // Skips what's drawn meanwhile (ground, clouds)
+		const QVector<ExportDraw>& ExportCaptured();
+
 		// Called when a mesh frees its GPU buffers, drops its cached geometry.
 		void ForgetMesh(uint64_t meshUid);
 

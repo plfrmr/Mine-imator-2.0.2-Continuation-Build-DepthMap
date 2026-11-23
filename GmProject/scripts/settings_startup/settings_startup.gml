@@ -26,6 +26,8 @@ function settings_startup()
 	setting_unlimited_values = false
 	
 	setting_watermark_custom = false
+	setting_view_safe_areas = false
+	setting_view_render_eta = true
 	setting_watermark_fn = ""
 	setting_watermark_image = null
 	setting_watermark_halign = "right"
@@ -113,6 +115,7 @@ function settings_startup()
 	setting_export_movie_high_quality = true
 	setting_export_movie_raytraced = false
 	setting_export_movie_hdr10 = false
+	setting_export_movie_overkill = false
 	setting_export_movie_watermark = trial_version
 	
 	setting_export_image_remove_background = false
@@ -120,6 +123,7 @@ function settings_startup()
 	setting_export_image_high_quality = true
 	setting_export_image_raytraced = false
 	setting_export_image_hdr10 = false
+	setting_export_image_overkill = false
 	setting_export_image_watermark = trial_version
 	
 	project_render_pass = e_render_pass.COMBINED

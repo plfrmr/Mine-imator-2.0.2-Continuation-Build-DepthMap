@@ -1,6 +1,7 @@
-/// shader_high_indirect_blur_set()
+/// shader_high_indirect_blur_set([blursize])
+/// @arg [blursize]
 
-function shader_high_indirect_blur_set()
+function shader_high_indirect_blur_set(blursize = -1)
 {
 	texture_set_stage(sampler_map[?"uDepthBuffer"], surface_get_texture(render_surface_depth))
 	gpu_set_texrepeat_ext(sampler_map[?"uDepthBuffer"], false)
@@ -15,5 +16,5 @@ function shader_high_indirect_blur_set()
 	render_set_uniform("uNoiseSize", render_sample_noise_size)
 	render_set_uniform_vec2("uScreenSize", render_width, render_height)
 	render_set_uniform("uSamples", render_samples)
-	render_set_uniform("uBlurSize", render_raytraced ? app.project_render_rt_denoise : app.project_render_indirect_blur_radius)
+	render_set_uniform("uBlurSize", blursize >= 0 ? blursize : (render_raytraced ? app.project_render_rt_denoise : app.project_render_indirect_blur_radius))
 }

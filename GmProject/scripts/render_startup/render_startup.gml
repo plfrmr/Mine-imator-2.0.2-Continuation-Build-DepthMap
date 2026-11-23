@@ -16,7 +16,7 @@ function render_startup()
 	globalvar render_effects, render_effects_done, render_effects_list, render_effects_progress, render_camera_bloom, render_camera_dof,
 			  render_glow, render_glow_falloff, render_camera_ca, render_camera_distort, render_camera_color_correction, render_camera_grain,
 			  render_camera_vignette, render_overlay, render_camera_lens_dirt, render_camera_lens_dirt_bloom, render_camera_lens_dirt_glow,
-			  render_ssao, render_shadows, render_indirect, render_reflections, render_quality, render_raytraced, render_rt_hw, render_rt_reflections, render_hdr, render_hdr_headroom, render_hdr_scale, render_pass,
+			  render_ssao, render_shadows, render_indirect, render_reflections, render_quality, render_raytraced, render_rt_hw, render_rt_reflections, render_hdr, render_hdr_headroom, render_hdr_scale, render_overkill, render_pass,
 			  render_tonemapper, render_exposure, render_gamma, render_depth_normals;
 	
 	globalvar render_matrix, render_samples, render_sample_current, render_samples_done, render_target_size;
@@ -64,6 +64,7 @@ function render_startup()
 	render_raytraced = false
 	render_rt_hw = false
 	render_hdr = false
+	render_overkill = false
 	render_hdr_headroom = 1
 	render_hdr_scale = 1
 	render_rt_reflections = false
@@ -117,6 +118,7 @@ function render_startup()
 	render_surface_hdr[0] = null
 	render_surface_hdr[3] = null
 	render_surface_hdr[4] = null
+	render_surface_hdr[5] = null
 	render_surface_hdr[1] = null
 	render_surface_hdr[2] = null
 	
