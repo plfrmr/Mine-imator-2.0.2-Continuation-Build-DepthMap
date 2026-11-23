@@ -61,6 +61,17 @@ function history_copy_render_settings(obj)
 	project_render_depth_map_detail_depth = obj.project_render_depth_map_detail_depth
 	project_render_hdr_peak = obj.project_render_hdr_peak
 	project_render_hdr_paper_white = obj.project_render_hdr_paper_white
+	project_render_ok_samples = obj.project_render_ok_samples
+	project_render_ok_bounces = obj.project_render_ok_bounces
+	project_render_ok_light_samples = obj.project_render_ok_light_samples
+	project_render_ok_paths = obj.project_render_ok_paths
+	project_render_ok_clamp = obj.project_render_ok_clamp
+	project_render_ok_roulette = obj.project_render_ok_roulette
+	project_render_rt_hw_denoise = obj.project_render_rt_hw_denoise
+	project_render_rt_hw_denoise_size = obj.project_render_rt_hw_denoise_size
+	project_render_time_limit = obj.project_render_time_limit
+	project_render_rt_sky_reflection = obj.project_render_rt_sky_reflection
+	project_render_rt_clamp = obj.project_render_rt_clamp
 	
 	project_render_rt_samples = obj.project_render_rt_samples
 	project_render_rt_precision = obj.project_render_rt_precision

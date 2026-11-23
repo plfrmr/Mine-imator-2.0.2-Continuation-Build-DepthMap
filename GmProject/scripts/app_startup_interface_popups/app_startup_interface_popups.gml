@@ -96,6 +96,7 @@ function app_startup_interface_popups()
 		high_quality = app.setting_export_movie_high_quality
 		raytraced = app.setting_export_movie_raytraced
 		hdr10 = app.setting_export_movie_hdr10
+		overkill = app.setting_export_movie_overkill
 		watermark = app.setting_export_movie_watermark
 		tbx_video_size_custom_width = new_textbox_integer()
 		tbx_video_size_custom_height = new_textbox_integer()
@@ -112,9 +113,21 @@ function app_startup_interface_popups()
 		high_quality = app.setting_export_image_high_quality
 		raytraced = app.setting_export_image_raytraced
 		hdr10 = app.setting_export_image_hdr10
+		overkill = app.setting_export_image_overkill
 		watermark = app.setting_export_image_watermark
 		tbx_image_size_custom_width = new_textbox_integer()
 		tbx_image_size_custom_height = new_textbox_integer()
+	}
+	
+	// Export Minecraft model (CUSTOM)
+	popup_exportmodel = new_popup("exportmodel", popup_exportmodel_draw, 350, null, true)
+	with (popup_exportmodel)
+	{
+		selected_only = false
+		size_blocks = 1
+		free_rotation = true
+		resource_pack = true
+		tbx_size = new_textbox_decimals()
 	}
 	
 	// Upgrade

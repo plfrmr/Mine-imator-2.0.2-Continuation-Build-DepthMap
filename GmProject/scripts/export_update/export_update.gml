@@ -51,17 +51,23 @@ function export_update()
 	if (window_state = "export_image" && render_samples = -1)
 		app_update_cameras(popup_exportimage.high_quality || popup_exportimage.raytraced, false)
 	
+	// Time limit per frame (CUSTOM): when this frame started
+	if (render_samples = -1)
+		export_frame_start = current_time
+	
 	// Render
 	if (window_state = "export_movie")
 	{
 		render_active = "movie"
 		render_raytraced = exportmovie_raytraced
+		render_overkill = exportmovie_overkill
 		render_quality = ((exportmovie_high_quality || render_raytraced) ? e_view_mode.RENDER : e_view_mode.SHADED)
 	}
 	else
 	{
 		render_active = "image"
 		render_raytraced = popup_exportimage.raytraced
+		render_overkill = popup_exportimage.overkill
 		render_quality = ((popup_exportimage.high_quality || render_raytraced) ? e_view_mode.RENDER : e_view_mode.SHADED)
 	}
 	
@@ -89,12 +95,17 @@ function export_update()
 	if (render_quality = e_view_mode.RENDER && render_samples = render_sample_count())
 		render_samples_done = true
 	
+	// Time limit per frame (CUSTOM): finish with the samples done so far
+	if (render_quality = e_view_mode.RENDER && project_render_time_limit > 0 && current_time - export_frame_start >= project_render_time_limit * 1000)
+		render_samples_done = true
+	
 	if (!render_samples_done)
 		return 1
 	
 	render_active = null
 	render_samples = -1
 	render_raytraced = false
+	render_overkill = false
 	
 	// Save movie frame
 	if (window_state = "export_movie")

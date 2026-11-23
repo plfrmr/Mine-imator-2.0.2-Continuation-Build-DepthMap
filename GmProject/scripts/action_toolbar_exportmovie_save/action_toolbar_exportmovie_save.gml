@@ -21,6 +21,7 @@ function action_toolbar_exportmovie_save()
 	exportmovie_framespersecond = popup_exportmovie.framespersecond
 	exportmovie_high_quality = popup_exportmovie.high_quality
 	exportmovie_raytraced = popup_exportmovie.raytraced
+	exportmovie_overkill = popup_exportmovie.overkill
 	export_hdr10 = (popup_exportmovie.hdr10 && popup_exportmovie.format != "wmv") // WMV has no HDR codec
 	exportmovie_current_sound = null
 	

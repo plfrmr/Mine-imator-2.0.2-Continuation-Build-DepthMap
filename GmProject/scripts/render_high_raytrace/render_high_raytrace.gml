@@ -90,9 +90,37 @@ function render_high_raytrace()
 	rt_set_param("jitterx", taa_jitter_matrix[12])
 	rt_set_param("jittery", taa_jitter_matrix[13])
 
+	// CUSTOM: sky in reflections, firefly clamp of Raytraced mode
+	rt_set_param("skyreflection", project_render_rt_sky_reflection)
+	rt_set_param("rtclamp", project_render_rt_clamp)
+	
+	// OVERKILL: path tracing with everything on
+	rt_set_param("overkill", render_overkill)
+	if (render_overkill)
+	{
+		rt_set_param("bounces", project_render_ok_bounces)
+		rt_set_param("reflectionbounces", project_render_ok_bounces)
+		rt_set_param("indirect", true)
+		rt_set_param("reflections", true)
+		rt_set_param("specular", true)
+		rt_set_param("shadows", true)
+		rt_set_param("tintedshadows", true)
+		rt_set_param("bouncelights", true)
+		rt_set_param("alphacutout", true)
+		rt_set_param("roughnesscutoff", 1)
+		rt_set_param("oklightsamples", project_render_ok_light_samples)
+		rt_set_param("okpaths", project_render_ok_paths)
+		rt_set_param("okclamp", project_render_ok_clamp)
+		rt_set_param("okroulette", project_render_ok_roulette)
+	}
+
 	if (!rt_trace(render_surface_depth, render_surface_normal, render_surface_diffuse, render_surface_material, render_surface_emissive,
 				  render_surface_shadows, render_surface_specular, render_sample_current))
 		return false
+
+	// Denoise (CUSTOM)
+	if (project_render_rt_hw_denoise && project_render_rt_hw_denoise_size > 0)
+		render_high_rt_denoise()
 
 	// Render passes
 	if (render_pass = e_render_pass.SHADOWS || render_pass = e_render_pass.INDIRECT || render_pass = e_render_pass.INDIRECT_SHADOWS)

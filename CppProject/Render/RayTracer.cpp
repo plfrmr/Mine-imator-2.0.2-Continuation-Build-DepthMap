@@ -43,7 +43,8 @@ namespace CppProject
 			FLAG_SPECULAR = 8,
 			FLAG_BOUNCE_LIGHTS = 16,
 			FLAG_SHADOWS = 32,
-			FLAG_TINTED_SHADOWS = 64
+			FLAG_TINTED_SHADOWS = 64,
+			FLAG_OVERKILL = 128
 		};
 
 		// Must match the cbuffer in RayTracer.hlsl
@@ -63,6 +64,7 @@ namespace CppProject
 			float jitter[4];	// TAA jitter (normalized device coordinates)
 			float color[4];		// bounce color saturation, glass tint strength, default emissive
 			float pbr[4];		// normal map strength, normal maps enabled, texture AO strength, parallax depth
+			float overkill[4];	// OVERKILL: light samples, paths per pixel, firefly clamp, Russian roulette start bounce
 		};
 
 		struct LightData
@@ -1016,6 +1018,31 @@ namespace CppProject
 #endif
 		}
 
+		static BoolType exportCapturing = false, exportPaused = false;
+		static QVector<ExportDraw> exportList;
+
+		void ExportCaptureBegin()
+		{
+			exportList.clear();
+			exportCapturing = true;
+			exportPaused = false;
+		}
+
+		void ExportCaptureEnd()
+		{
+			exportCapturing = false;
+		}
+
+		void ExportCapturePause(BoolType pause)
+		{
+			exportPaused = pause;
+		}
+
+		const QVector<ExportDraw>& ExportCaptured()
+		{
+			return exportList;
+		}
+
 		void CaptureBegin()
 		{
 #if API_D3D11
@@ -1056,7 +1083,7 @@ namespace CppProject
 		BoolType IsCapturing()
 		{
 #if API_D3D11
-			return capturing && !capturePaused;
+			return (capturing && !capturePaused) || (exportCapturing && !exportPaused);
 #else
 			return false;
 #endif
@@ -1114,7 +1141,19 @@ namespace CppProject
 					continue;
 				obj.mesh = mesh;
 				obj.meshUid = mesh->uid;
-				captureList.append(obj);
+				if (capturing && !capturePaused)
+					captureList.append(obj);
+
+				if (exportCapturing && !exportPaused)
+				{
+					ExportDraw draw;
+					draw.mesh = mesh;
+					draw.world = obj.world;
+					draw.texId = obj.texId;
+					memcpy(draw.uvRect, obj.uvRect, sizeof(draw.uvRect));
+					memcpy(draw.blendColor, obj.blendColor, sizeof(draw.blendColor));
+					exportList.append(draw);
+				}
 			}
 #else
 			Q_UNUSED(buffer);
@@ -1326,6 +1365,12 @@ namespace CppProject
 			if (Param("bouncelights", 1)) flags |= FLAG_BOUNCE_LIGHTS;
 			if (Param("shadows", 1)) flags |= FLAG_SHADOWS;
 			if (Param("tintedshadows", 1)) flags |= FLAG_TINTED_SHADOWS;
+			if (Param("overkill", 0)) flags |= FLAG_OVERKILL;
+			constants.overkill[0] = (float)qBound<RealType>(1, Param("oklightsamples", 1), 16);
+			constants.overkill[1] = (float)qBound<RealType>(1, Param("okpaths", 1), 16);
+			constants.overkill[2] = (float)qMax<RealType>(0, Param("overkill", 0) ? Param("okclamp", 10) : Param("rtclamp", 0));
+			constants.color[3] = (float)qMax<RealType>(0, Param("skyreflection", 1));
+			constants.overkill[3] = (float)qBound<RealType>(1, Param("okroulette", 3), 64);
 
 			constants.depth[2] = (float)Param("normalscale", 1);
 			constants.depth[3] = (float)Param("gamma", 2.2);
