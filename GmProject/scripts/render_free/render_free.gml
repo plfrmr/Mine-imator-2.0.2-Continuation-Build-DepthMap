@@ -13,6 +13,9 @@ function render_free()
 	surface_free(render_surface_hdr[3])
 	surface_free(render_surface_hdr[4])
 	surface_free(render_surface_hdr[5])
+	surface_free(render_surface_hdr[6])
+	surface_free(render_surface_hdr[7])
+	surface_free(render_surface_hdr[8])
 	
 	// G-Buffers
 	surface_free(render_surface_depth)

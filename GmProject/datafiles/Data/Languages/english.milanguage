@@ -3142,6 +3142,8 @@
 		"rtclamp": "Firefly clamp",
 		"rtclamptip": "Raytraced mode: limits how bright bounced light and reflections can be in one sample, which removes bright speckles (fireflies). 0 = off.",
 		"rtskyreflection": "Sky reflections",
+		"rtreflectionbump": "Reflection bumpiness",
+		"rtreflectionbumptip": "How much normal maps bend reflections (Raytraced and OVERKILL modes). 100% is physically exact, but bumpy textures made very reflective break their reflection into patches; lower values give clean mirror reflections. Lighting always uses the full normal map.",
 		"rtskyreflectiontip": "How bright the sky is in reflections (Raytraced and OVERKILL modes).",
 		"rthwdenoise": "Denoise",
 		"rthwdenoisetip": "Smooths the noise of ray traced light in Raytraced and OVERKILL modes without blurring across edges. It fades out as samples add up, so finished renders stay sharp.",

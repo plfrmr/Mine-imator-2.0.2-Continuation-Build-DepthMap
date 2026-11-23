@@ -43,10 +43,18 @@ namespace CppProject
 		// Mine-imator (x, y, z up) to Minecraft model space (x, y up, z south), the inverse of value_get_point3D
 		static V3 ToMc(const V3& p) { return { p[0], p[2], p[1] }; }
 
+		struct Tri
+		{
+			V3 p[3];
+			double uv[3][2];
+		};
+
 		struct Quad
 		{
-			V3 p[4];			// Corners in order around the quad (Minecraft space)
-			double uv[4][2];
+			V3 p[4];			// Rectangle corners in order around it (Minecraft space)
+			Tri tri[2];			// The drawn triangles inside it, for the texture
+			int numTri = 0;
+			bool masked = false;// The triangles don't fill the rectangle (bend joints are tapered), the rest is see-through
 			V3 normal;			// Side that is visible
 			double color[4];	// Vertex color * tint
 			IntType texId;
@@ -200,8 +208,10 @@ namespace CppProject
 		static M3 RotY(double a) { double c = std::cos(a), s = std::sin(a); return M3{ { { c, 0, s }, { 0, 1, 0 }, { -s, 0, c } } }; }
 		static M3 RotZ(double a) { double c = std::cos(a), s = std::sin(a); return M3{ { { c, -s, 0 }, { s, c, 0 }, { 0, 0, 1 } } }; }
 
-		// Element rotation angles (Minecraft x, y, z in degrees) for a rotation given in Minecraft space. Mine-imator's model
-		// loader (block_load_model_file) applies them in Mine-imator space as X, then Z (Minecraft y), then Y (Minecraft z).
+		// Element rotation angles (Minecraft x, y, z in degrees) for a rotation given in Minecraft space. Minecraft
+		// (BlockElementRotation, 1.21.11+) builds it as Matrix4f.rotationZYX(z, y, x) = Rz * Ry * Rx, so a vertex turns
+		// around x first, then y, then z. In Mine-imator space (block_load_model_file) that is X, then Z (Minecraft y),
+		// then Y (Minecraft z).
 		static bool DecomposeRotation(const M3& rMc, double angles[3])
 		{
 			static const double sx = AxisSign(0), sy = AxisSign(1), sz = AxisSign(2);
@@ -256,14 +266,41 @@ namespace CppProject
 			return "[" + Num(v[0]) + ", " + Num(v[1]) + ", " + Num(v[2]) + "]";
 		}
 
-		// Texture coordinate of a point on (or projected onto) a quad
-		static void QuadUV(const Quad& q, const V3& p, double& u, double& v)
+		// Texture coordinate of a point on (or projected onto) a triangle's plane, and its smallest barycentric weight
+		// (negative outside the triangle)
+		static double TriUV(const Tri& t, const V3& p, double& u, double& v)
 		{
-			V3 e0 = Sub(q.p[1], q.p[0]), e3 = Sub(q.p[3], q.p[0]), d = Sub(p, q.p[0]);
-			double a = Dot(d, e0) / std::max(Dot(e0, e0), 1e-12);
-			double b = Dot(d, e3) / std::max(Dot(e3, e3), 1e-12);
-			u = q.uv[0][0] + a * (q.uv[1][0] - q.uv[0][0]) + b * (q.uv[3][0] - q.uv[0][0]);
-			v = q.uv[0][1] + a * (q.uv[1][1] - q.uv[0][1]) + b * (q.uv[3][1] - q.uv[0][1]);
+			V3 e1 = Sub(t.p[1], t.p[0]), e2 = Sub(t.p[2], t.p[0]), d = Sub(p, t.p[0]);
+			double d11 = Dot(e1, e1), d12 = Dot(e1, e2), d22 = Dot(e2, e2), dp1 = Dot(d, e1), dp2 = Dot(d, e2);
+			double den = d11 * d22 - d12 * d12;
+			if (std::abs(den) < 1e-18)
+			{
+				u = t.uv[0][0];
+				v = t.uv[0][1];
+				return -1e9;
+			}
+			double b1 = (d22 * dp1 - d12 * dp2) / den, b2 = (d11 * dp2 - d12 * dp1) / den, b0 = 1.0 - b1 - b2;
+			u = b0 * t.uv[0][0] + b1 * t.uv[1][0] + b2 * t.uv[2][0];
+			v = b0 * t.uv[0][1] + b1 * t.uv[1][1] + b2 * t.uv[2][1];
+			return std::min({ b0, b1, b2 });
+		}
+
+		// Texture coordinate of a point on a quad, from the drawn triangle it lies in (or the closest one). Returns
+		// whether the point is on a drawn triangle.
+		static bool QuadUV(const Quad& q, const V3& p, double& u, double& v)
+		{
+			double best = -1e18;
+			for (int i = 0; i < q.numTri; i++)
+			{
+				double tu, tv, w = TriUV(q.tri[i], p, tu, tv);
+				if (w > best)
+				{
+					best = w;
+					u = tu;
+					v = tv;
+				}
+			}
+			return best >= -1e-6;
 		}
 
 		static double Frac(double x)
@@ -271,12 +308,32 @@ namespace CppProject
 			return x - std::floor(x);
 		}
 
+		static V3 FacePoint(const Face& f, double s, double t)
+		{
+			return Add(f.corner, Add(Mul(f.uAxis, s), Mul(f.vAxis, t)));
+		}
+
+		// Whether any part of a face pixel is covered by the drawn triangles (tests its center and corners, so faces
+		// meeting at a slanted edge overlap a little instead of leaving gaps)
+		static bool PixelCovered(const Face& f, int x, int y)
+		{
+			if (!f.quad->masked)
+				return true;
+			const double pts[5][2] = { { 0.5, 0.5 }, { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } };
+			for (const auto& o : pts)
+			{
+				double u, v;
+				if (QuadUV(*f.quad, FacePoint(f, (x + o[0]) / f.w, (y + o[1]) / f.h), u, v))
+					return true;
+			}
+			return false;
+		}
+
 		// Source texture pixel coordinates of a face point
 		static void TexelAt(const Face& f, const TexData& tex, double s, double t, int& px, int& py)
 		{
 			double u, v;
-			V3 p = Add(f.corner, Add(Mul(f.uAxis, s), Mul(f.vAxis, t)));
-			QuadUV(*f.quad, p, u, v);
+			QuadUV(*f.quad, FacePoint(f, s, t), u, v);
 			double tu = f.quad->uvRect[0] + Frac(u) * f.quad->uvRect[2];
 			double tv = f.quad->uvRect[1] + Frac(v) * f.quad->uvRect[3];
 			px = std::clamp((int)std::floor(tu * tex.image.width()), 0, tex.image.width() - 1);
@@ -438,114 +495,152 @@ namespace CppProject
 				col[3] = ((c >> 24) & 0xFF) / 255.0;
 			};
 
+			// Reads triangle t, false if it's out of range or has no area
+			struct SrcTri { V3 p[3], n[3]; double uv[3][2], col[3][4]; V3 geo; };
+			auto readTri = [&](IntType t, SrcTri& s) {
+				for (int k = 0; k < 3; k++)
+				{
+					uint32_t i = ib[t * 3 + k];
+					if (i >= (uint32_t)numVerts)
+						return false;
+					vertex(i, s.p[k], s.n[k], s.uv[k], s.col[k]);
+				}
+				s.geo = Cross(Sub(s.p[1], s.p[0]), Sub(s.p[2], s.p[0]));
+				return Len(s.geo) > 1e-9;
+			};
+
 			IntType numTris = numIndices / 3;
 			for (IntType t = 0; t < numTris;)
 			{
-				// Two triangles sharing an edge form a quad
-				bool made = false;
-				if (t + 1 < numTris)
-				{
-					uint32_t a[3] = { ib[t * 3], ib[t * 3 + 1], ib[t * 3 + 2] };
-					uint32_t b[3] = { ib[t * 3 + 3], ib[t * 3 + 4], ib[t * 3 + 5] };
-					bool ok = true;
-					for (int k = 0; k < 3; k++)
-						ok = ok && a[k] < (uint32_t)numVerts && b[k] < (uint32_t)numVerts;
-
-					V3 ap[3], an[3], bp[3], bn[3];
-					double auv[3][2], acol[3][4], buv[3][2], bcol[3][4];
-					if (ok)
-					{
-						for (int k = 0; k < 3; k++)
-						{
-							vertex(a[k], ap[k], an[k], auv[k], acol[k]);
-							vertex(b[k], bp[k], bn[k], buv[k], bcol[k]);
-						}
-
-						// Vertex of b that isn't in a
-						int extra = -1, shared = 0;
-						for (int k = 0; k < 3; k++)
-						{
-							bool found = false;
-							for (int j = 0; j < 3; j++)
-								if (Len(Sub(bp[k], ap[j])) < 1e-4)
-									found = true;
-							if (found)
-								shared++;
-							else
-								extra = k;
-						}
-
-						V3 na = Cross(Sub(ap[1], ap[0]), Sub(ap[2], ap[0])), nb = Cross(Sub(bp[1], bp[0]), Sub(bp[2], bp[0]));
-						if (shared == 2 && extra >= 0 && Len(na) > 1e-9 && Len(nb) > 1e-9 && Dot(Norm(na), Norm(nb)) > 0.999)
-						{
-							// Insert the extra vertex into a's cycle at the shared edge
-							int insertAfter = -1;
-							for (int e = 0; e < 3; e++)
-							{
-								int e2 = (e + 1) % 3;
-								bool s1 = false, s2 = false;
-								for (int k = 0; k < 3; k++)
-								{
-									if (Len(Sub(bp[k], ap[e])) < 1e-4) s1 = true;
-									if (Len(Sub(bp[k], ap[e2])) < 1e-4) s2 = true;
-								}
-								if (s1 && s2)
-									insertAfter = e;
-							}
-
-							if (insertAfter >= 0)
-							{
-								Quad q;
-								int order[4], oi = 0;
-								for (int e = 0; e < 3; e++)
-								{
-									order[oi++] = e;
-									if (e == insertAfter)
-										order[oi++] = 3;
-								}
-
-								double col[4] = { 0, 0, 0, 0 };
-								V3 nsum = { 0, 0, 0 };
-								for (int k = 0; k < 4; k++)
-								{
-									int o = order[k];
-									q.p[k] = (o < 3) ? ap[o] : bp[extra];
-									q.uv[k][0] = (o < 3) ? auv[o][0] : buv[extra][0];
-									q.uv[k][1] = (o < 3) ? auv[o][1] : buv[extra][1];
-									const double* c = (o < 3) ? acol[o] : bcol[extra];
-									for (int j = 0; j < 4; j++)
-										col[j] += c[j] / 4.0;
-									nsum = Add(nsum, (o < 3) ? an[o] : bn[extra]);
-								}
-
-								// Rectangle check (Mine-imator geometry is made of rectangles)
-								V3 e0 = Sub(q.p[1], q.p[0]), e1 = Sub(q.p[2], q.p[1]), e3 = Sub(q.p[3], q.p[0]);
-								bool rect = Len(e0) > 1e-6 && Len(e3) > 1e-6 &&
-											std::abs(Dot(Norm(e0), Norm(e3))) < 1e-3 && std::abs(Dot(Norm(e0), Norm(e1))) < 1e-3;
-								if (rect)
-								{
-									V3 geo = Norm(Cross(e0, e3));
-									q.normal = (Dot(geo, nsum) < 0) ? Mul(geo, -1) : geo;
-									for (int j = 0; j < 4; j++)
-										q.color[j] = col[j] * draw.blendColor[j];
-									q.texId = draw.texId;
-									memcpy(q.uvRect, draw.uvRect, sizeof(q.uvRect));
-									if (q.color[3] > 0.001)
-										quads.push_back(q);
-									made = true;
-								}
-							}
-						}
-					}
-				}
-
-				if (made)
-					t += 2;
-				else
+				SrcTri a, b;
+				if (!readTri(t, a))
 				{
 					skipped++;
 					t += 1;
+					continue;
 				}
+
+				// Two triangles sharing an edge in the same plane form one face, any other triangle is a face of its own
+				std::vector<V3> poly = { a.p[0], a.p[1], a.p[2] };
+				std::vector<const SrcTri*> src = { &a };
+				if (t + 1 < numTris && readTri(t + 1, b) && Dot(Norm(a.geo), Norm(b.geo)) > 0.999)
+				{
+					int extra = -1, shared = 0;
+					for (int k = 0; k < 3; k++)
+					{
+						bool found = false;
+						for (int j = 0; j < 3; j++)
+							if (Len(Sub(b.p[k], a.p[j])) < 1e-4)
+								found = true;
+						if (found)
+							shared++;
+						else
+							extra = k;
+					}
+
+					if (shared == 2 && extra >= 0)
+					{
+						// Insert the extra vertex into a's cycle at the shared edge
+						int insertAfter = -1;
+						for (int e = 0; e < 3; e++)
+						{
+							bool s1 = false, s2 = false;
+							for (int k = 0; k < 3; k++)
+							{
+								if (Len(Sub(b.p[k], a.p[e])) < 1e-4) s1 = true;
+								if (Len(Sub(b.p[k], a.p[(e + 1) % 3])) < 1e-4) s2 = true;
+							}
+							if (s1 && s2)
+								insertAfter = e;
+						}
+						if (insertAfter >= 0)
+						{
+							poly.insert(poly.begin() + insertAfter + 1, b.p[extra]);
+							src.push_back(&b);
+						}
+					}
+				}
+				t += (IntType)src.size();
+
+				// Plane of the face, visible on the side its vertex normals point to
+				V3 geoSum = { 0, 0, 0 }, nsum = { 0, 0, 0 };
+				double col[4] = { 0, 0, 0, 0 }, polyArea = 0;
+				int numCol = 0;
+				for (const SrcTri* s : src)
+				{
+					geoSum = Add(geoSum, s->geo);
+					polyArea += Len(s->geo) / 2;
+					for (int k = 0; k < 3; k++)
+					{
+						nsum = Add(nsum, s->n[k]);
+						for (int j = 0; j < 4; j++)
+							col[j] += s->col[k][j];
+						numCol++;
+					}
+				}
+				V3 n = Norm(geoSum);
+				if (Dot(n, nsum) < 0)
+					n = Mul(n, -1);
+				V3 c = { 0, 0, 0 };
+				for (const V3& p : poly)
+					c = Add(c, Mul(p, 1.0 / poly.size()));
+
+				// Smallest rectangle around it, lined up with one of its edges (Mine-imator geometry is mostly
+				// rectangles, which fit exactly; tapered bend joints get see-through corners)
+				double bestArea = 1e18, ra0 = 0, ra1 = 0, rb0 = 0, rb1 = 0;
+				V3 rx, ry;
+				for (size_t e = 0; e < poly.size(); e++)
+				{
+					V3 edge = Sub(poly[(e + 1) % poly.size()], poly[e]);
+					V3 x = Norm(Sub(edge, Mul(n, Dot(edge, n))));
+					if (Len(x) < 0.5)
+						continue;
+					V3 y = Cross(n, x);
+					double a0 = 1e18, a1 = -1e18, b0 = 1e18, b1 = -1e18;
+					for (const V3& p : poly)
+					{
+						V3 d = Sub(p, c);
+						a0 = std::min(a0, Dot(d, x));
+						a1 = std::max(a1, Dot(d, x));
+						b0 = std::min(b0, Dot(d, y));
+						b1 = std::max(b1, Dot(d, y));
+					}
+					double area = (a1 - a0) * (b1 - b0);
+					if (area < bestArea - 1e-9)
+					{
+						bestArea = area;
+						ra0 = a0; ra1 = a1; rb0 = b0; rb1 = b1;
+						rx = x;
+						ry = y;
+					}
+				}
+				if (bestArea > 1e17 || bestArea < 1e-10)
+				{
+					skipped += (IntType)src.size();
+					continue;
+				}
+
+				Quad q;
+				q.p[0] = Add(c, Add(Mul(rx, ra0), Mul(ry, rb0)));
+				q.p[1] = Add(c, Add(Mul(rx, ra1), Mul(ry, rb0)));
+				q.p[2] = Add(c, Add(Mul(rx, ra1), Mul(ry, rb1)));
+				q.p[3] = Add(c, Add(Mul(rx, ra0), Mul(ry, rb1)));
+				q.normal = n;
+				q.masked = (polyArea < bestArea * 0.995);
+				q.numTri = (int)src.size();
+				for (int i = 0; i < q.numTri; i++)
+					for (int k = 0; k < 3; k++)
+					{
+						q.tri[i].p[k] = src[i]->p[k];
+						q.tri[i].uv[k][0] = src[i]->uv[k][0];
+						q.tri[i].uv[k][1] = src[i]->uv[k][1];
+					}
+				for (int j = 0; j < 4; j++)
+					q.color[j] = col[j] / numCol * draw.blendColor[j];
+				q.texId = draw.texId;
+				memcpy(q.uvRect, draw.uvRect, sizeof(q.uvRect));
+				if (q.color[3] > 0.001)
+					quads.push_back(q);
 			}
 		}
 
@@ -567,9 +662,15 @@ namespace CppProject
 		double scale = std::clamp(sizeBlocks, 0.05, 3.0) * 16.0 / largest;
 		double yBase = (size[1] * scale > 32.0) ? -16.0 : 0.0;
 		V3 center = { (mn[0] + mx[0]) / 2, mn[1], (mn[2] + mx[2]) / 2 };
+		auto fit = [&](const V3& p) { return Add(Mul(Sub(p, center), scale), V3{ 8.0, yBase, 8.0 }); };
 		for (Quad& q : quads)
+		{
 			for (int i = 0; i < 4; i++)
-				q.p[i] = Add(Mul(Sub(q.p[i], center), scale), V3{ 8.0, yBase, 8.0 });
+				q.p[i] = fit(q.p[i]);
+			for (int i = 0; i < q.numTri; i++)
+				for (int k = 0; k < 3; k++)
+					q.tri[i].p[k] = fit(q.tri[i].p[k]);
+		}
 
 		// Faces
 		std::vector<Face> faces;
@@ -794,7 +895,9 @@ namespace CppProject
 					// Border pixels repeat the face's edge
 					int cx = std::clamp(x, 0, f.w - 1), cy = std::clamp(y, 0, f.h - 1);
 					double col[4] = { 1, 1, 1, 1 };
-					if (tex.valid)
+					if (!PixelCovered(f, cx, cy))
+						col[3] = 0;
+					else if (tex.valid)
 					{
 						int px, py;
 						TexelAt(f, tex, (cx + 0.5) / f.w, (cy + 0.5) / f.h, px, py);

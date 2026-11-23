@@ -44,6 +44,7 @@ cbuffer Constants : register(b0)
 	float4 uColor;		// bounce color saturation, glass tint strength, default emissive, sky reflection strength
 	float4 uPBR;		// normal map strength, normal maps enabled (1/0), texture AO strength, parallax depth (0 = off)
 	float4 uOverkill;	// OVERKILL: light samples per pixel, paths per pixel, firefly clamp (0 = off, also used by Raytraced mode), Russian roulette start bounce
+	float4 uHorizon;	// rgb = sky color at the horizon (fog color, sunset glow), the sky blends to uSky above it; a = reflection bumpiness
 };
 
 struct Light
@@ -649,12 +650,15 @@ float3 BounceColor(float3 albedo)
 	return max(lerp(float3(luma, luma, luma), albedo, uColor.x), 0.0);
 }
 
-// How much light gets through along a shadow ray: 0 when blocked, tinted by see-through surfaces (stained glass...)
+// How much light gets through along a shadow ray: 0 when blocked. See-through surfaces let through the part of the light they
+// don't cover (1 - opacity), so the more opaque a surface is the less light passes. With tinted shadows the light that passes
+// takes on the surface's color (stained glass...).
 float3 TraceTransmittance(float3 origin, float3 dir, float tMax)
 {
-	if (!(uSize.w & FLAG_TINTED_SHADOWS) || !(uSize.w & FLAG_ALPHA_CUTOUT))
+	if (!(uSize.w & FLAG_ALPHA_CUTOUT)) // Everything is solid
 		return TraceOccluded(origin, dir, tMax) ? float3(0.0, 0.0, 0.0) : float3(1.0, 1.0, 1.0);
 
+	bool tinted = (uSize.w & FLAG_TINTED_SHADOWS) != 0;
 	float3 transmittance = float3(1.0, 1.0, 1.0);
 	RayQuery<RAY_FLAG_NONE> q;
 	q.TraceRayInline(gScene, RAY_FLAG_NONE, MASK_SHADOWS, MakeRay(origin, dir, tMax));
@@ -664,13 +668,21 @@ float3 TraceTransmittance(float3 origin, float3 dir, float tMax)
 			continue;
 
 		float4 c = CandidateColor(q.CandidateInstanceID(), q.CandidatePrimitiveIndex(), q.CandidateTriangleBarycentrics());
-		if (c.a >= uMisc.x)
+		if (c.a >= 0.99)
 		{
 			q.CommitNonOpaqueTriangleHit();
 			break;
 		}
 		else if (c.a > 0.01)
-			transmittance *= lerp(float3(1.0, 1.0, 1.0), GlassTint(c.rgb), saturate(c.a * uColor.y));
+		{
+			float3 filter = tinted ? lerp(float3(1.0, 1.0, 1.0), GlassTint(c.rgb), saturate(c.a * uColor.y)) : float3(1.0, 1.0, 1.0);
+			transmittance *= (1.0 - c.a) * filter;
+			if (max(transmittance.r, max(transmittance.g, transmittance.b)) < 0.002)
+			{
+				q.CommitNonOpaqueTriangleHit(); // Practically no light left
+				break;
+			}
+		}
 	}
 
 	if (q.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
@@ -892,10 +904,33 @@ float3 ClampFirefly(float3 c)
 	return (uOverkill.z > 0.0 && l > uOverkill.z) ? c * (uOverkill.z / l) : c;
 }
 
-// The sky as seen in reflections (scaled by the Sky reflections setting)
-float3 SkyRadiance()
+// Keeps a reflected direction above the face. Normal maps can tilt a mirror direction into the surface; instead of losing that
+// reflection (it showed as black patches following the normal map), it's mirrored back up by the face. Such directions, and
+// ones below the bumped normal, are weighted by Fresnel alone (the GGX geometry term would make them black).
+float3 AboveSurface(float3 dir, float3 geoNormal, out bool folded)
 {
-	return ToLinear(uSky.rgb) * uColor.w;
+	float d = dot(dir, geoNormal);
+	folded = (d < 0.01);
+	if (!folded)
+		return dir;
+	return normalize(dir - geoNormal * (2.0 * d - 0.02));
+}
+
+// Normal used for reflections: normal maps bend reflections only as much as the Reflection bumpiness setting says (a mirror
+// with a full strength grass normal map scatters its reflection into patches)
+float3 ReflectionNormal(float3 normal, float3 geoNormal)
+{
+	float3 n = normalize(lerp(geoNormal, normal, uHorizon.a));
+	return any(isnan(n)) ? geoNormal : n;
+}
+
+// The sky as seen in reflections (scaled by the Sky reflections setting): the horizon color near the horizon, blending to the
+// sky color upwards, like the sky Mine-imator draws behind the scene. At sunset the top of the sky is dark and the horizon
+// glows, a single color made reflections of the sky black there.
+float3 SkyRadiance(float3 dir)
+{
+	float up = saturate(dir.z / 0.45);
+	return ToLinear(lerp(uHorizon.rgb, uSky.rgb, up * up * (3.0 - 2.0 * up))) * uColor.w;
 }
 
 // GGX reflection weight for a sampled half vector (importance sampled by the normal distribution)
@@ -909,9 +944,9 @@ float3 GGXSampleWeight(float3 f0, float3 N, float3 V, float3 L, float3 H, float 
 // Light from the open sky along a ray. Smooth reflections show the sky itself; rough reflections and diffuse bounces get the
 // same sky light as Raytraced mode's ambient (the displayed sky color is as bright as a sunlit wall, far too bright to light
 // every rough surface with).
-float3 OverkillSky(bool specular, float roughness)
+float3 OverkillSky(bool specular, float roughness, float3 dir)
 {
-	return specular ? lerp(SkyRadiance(), EnvironmentLight(), saturate(roughness * 2.0)) : EnvironmentLight();
+	return specular ? lerp(SkyRadiance(dir), EnvironmentLight(), saturate(roughness * 2.0)) : EnvironmentLight();
 }
 
 // Light arriving along a ray, following it through up to "bounces" surfaces. For reflection rays, "roughness" is the roughness
@@ -933,13 +968,13 @@ float3 OverkillPath(float3 origin, float3 dir, uint bounces, bool specularRay, f
 		Surface s;
 		if (!TraceClosestAlpha(origin, dir, uRay.x, seeThrough ? 0.01 : uMisc.x, s))
 		{
-			radiance += throughput * OverkillSky(lastSpecular, lastRoughness);
+			radiance += throughput * OverkillSky(lastSpecular, lastRoughness, dir);
 			break;
 		}
 
 		// See-through surface (stained glass): blend in its lit color by its opacity and continue behind it, the same way the
 		// rasterizer draws it when looking at it directly. It doesn't count as a bounce.
-		if (seeThrough && s.alpha < uMisc.x)
+		if (seeThrough && s.alpha < 0.99)
 		{
 			if (layers >= 8)
 				break;
@@ -971,11 +1006,12 @@ float3 OverkillPath(float3 origin, float3 dir, uint bounces, bool specularRay, f
 		float specProb = clamp(max(Luma(F), s.metallic), 0.05, 0.95);
 		if (Rand(seed) < specProb)
 		{
-			float3 H = SampleGGX(s.normal, roughness, seed);
-			float3 L = reflect(dir, H);
-			if (dot(L, s.normal) <= 0.0 || dot(L, s.geoNormal) <= 0.0)
-				break;
-			throughput *= GGXSampleWeight(f0, s.normal, V, L, H, roughness) / specProb;
+			float3 rn = ReflectionNormal(s.normal, s.geoNormal);
+			float3 H = SampleGGX(rn, roughness, seed);
+			bool folded;
+			float3 L = AboveSurface(reflect(dir, H), s.geoNormal, folded);
+			float3 w = (folded || dot(L, rn) < 0.01) ? FresnelSchlick(f0, max(dot(V, H), 0.001)) : GGXSampleWeight(f0, rn, V, L, H, roughness);
+			throughput *= w / specProb;
 			dir = L;
 			lastSpecular = true;
 			lastRoughness = roughness;
@@ -1039,14 +1075,13 @@ void OverkillShade(float3 pos, float3 normal, float3 geoNormal, Parallax pom, fl
 
 		if ((uSize.w & FLAG_REFLECTIONS) && uCounts.z > 0)
 		{
-			float3 H = SampleGGX(normal, roughness, seed);
-			float3 L = reflect(-viewDir, H);
-			if (dot(L, normal) > 0.0 && dot(L, geoNormal) > 0.0)
-			{
-				float3 w = GGXSampleWeight(f0, normal, viewDir, L, H, roughness);
-				if (Luma(w) > 0.0005)
-					reflected += ClampFirefly(w * OverkillPath(origin, L, uCounts.z, true, roughness, seed));
-			}
+			float3 rn = ReflectionNormal(normal, geoNormal);
+			float3 H = SampleGGX(rn, roughness, seed);
+			bool folded;
+			float3 L = AboveSurface(reflect(-viewDir, H), geoNormal, folded);
+			float3 w = (folded || dot(L, rn) < 0.01) ? FresnelSchlick(f0, max(dot(viewDir, H), 0.001)) : GGXSampleWeight(f0, rn, viewDir, L, H, roughness);
+			if (Luma(w) > 0.0005)
+				reflected += ClampFirefly(w * OverkillPath(origin, L, uCounts.z, true, roughness, seed));
 		}
 	}
 	indirect /= (float)paths;
@@ -1201,6 +1236,32 @@ void main(uint3 id : SV_DispatchThreadID)
 					c = GGXSampleWeight(f0, normal, viewDir, L, H, roughness) * OverkillPath(origin, L, max(uCounts.z, 1u), true, roughness, seed);
 			}
 		}
+		else if (debugView == 12) // Parallax/normal check: red = hit a texel column side, green = normal is NaN, blue = has parallax
+			c = float3((primaryPom.tex != NO_TEXTURE && (primaryPom.side.x != 0.0 || primaryPom.side.y != 0.0)) ? 1.0 : 0.0,
+					   any(isnan(normal)) ? 1.0 : 0.0, primaryPom.tex != NO_TEXTURE ? 0.5 : 0.0);
+		else if (debugView == 14) // Primary hit: red = surface less than 99% opaque, green = ray hit is away from the G-buffer surface
+		{
+			Surface s;
+			float3 gpos = mul(uViewInv, float4(ViewPosFromDepth(uv, depth), 1.0)).xyz;
+			bool hit = TraceClosestAlpha(uCamPos.xyz, primaryDir, 1000000.0, 0.01, s);
+			c = float3(hit && s.alpha < 0.99 ? 1.0 : 0.0, distance(pos, gpos) > max(0.5, distance(uCamPos.xyz, gpos) * 0.01) ? 1.0 : 0.0, 0.0);
+		}
+		else if (debugView == 15) // Mirror reflection ray: red = hits something within 1 unit, green = farther, black = sky
+		{
+			float3 R = reflect(-viewDir, normal);
+			RayQuery<RAY_FLAG_NONE> q;
+			q.TraceRayInline(gScene, BaseRayFlags(), 0xFF, MakeRay(pos + geoNormal * uRay.y, R, 1000000.0));
+			while (q.Proceed())
+			{
+				if (q.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE &&
+					CandidateAlpha(q.CandidateInstanceID(), q.CandidatePrimitiveIndex(), q.CandidateTriangleBarycentrics()) >= uMisc.x)
+					q.CommitNonOpaqueTriangleHit();
+			}
+			if (q.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
+				c = (q.CommittedRayT() < 1.0) ? float3(1.0, 0.0, 0.0) : float3(0.0, 1.0, 0.0);
+		}
+		else if (debugView == 13) // Mirror reflection direction (world) of the camera's surface
+			c = reflect(-viewDir, normal) * 0.5 + 0.5;
 		else if (debugView == 11) // Material at the first bounce hit: red = roughness, green = metallic, blue = f0 * 10
 		{
 			Surface s;
@@ -1263,10 +1324,10 @@ void main(uint3 id : SV_DispatchThreadID)
 	// Reflections
 	if ((uSize.w & FLAG_REFLECTIONS) && (fresnel > 0.001 || metallic > 0.001) && material.r <= uStrengths.w)
 	{
-		float3 H = SampleGGX(normal, roughness, seed);
-		float3 R = reflect(-viewDir, H);
+		float3 H = SampleGGX(ReflectionNormal(normal, geoNormal), roughness, seed);
+		bool folded;
+		float3 R = AboveSurface(reflect(-viewDir, H), geoNormal, folded);
 
-		if (dot(R, normal) > 0.0 && dot(R, geoNormal) > 0.0)
 		{
 			float3 reflected;
 			Surface s;
@@ -1282,7 +1343,7 @@ void main(uint3 id : SV_DispatchThreadID)
 				reflected = s.albedo * hitLight;
 			}
 			else
-				reflected = SkyRadiance();
+				reflected = SkyRadiance(R);
 
 			specular += ClampFirefly(reflected * uStrengths.z * fresnel * specTint);
 		}

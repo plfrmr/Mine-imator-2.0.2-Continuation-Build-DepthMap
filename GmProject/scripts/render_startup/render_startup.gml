@@ -119,6 +119,9 @@ function render_startup()
 	render_surface_hdr[3] = null
 	render_surface_hdr[4] = null
 	render_surface_hdr[5] = null
+	render_surface_hdr[6] = null
+	render_surface_hdr[7] = null
+	render_surface_hdr[8] = null
 	render_surface_hdr[1] = null
 	render_surface_hdr[2] = null
 	

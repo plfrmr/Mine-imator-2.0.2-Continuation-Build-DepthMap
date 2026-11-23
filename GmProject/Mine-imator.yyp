@@ -3,6 +3,7 @@
   "resourceVersion": "1.6",
   "name": "Mine-imator",
   "resources": [
+    {"id":{"name":"action_project_render_rt_reflection_bump","path":"scripts/action_project_render_rt_reflection_bump/action_project_render_rt_reflection_bump.yy",},"order":99,},
     {"id":{"name":"export_model","path":"scripts/export_model/export_model.yy",},"order":99,},
     {"id":{"name":"popup_exportmodel_draw","path":"scripts/popup_exportmodel_draw/popup_exportmodel_draw.yy",},"order":99,},
     {"id":{"name":"action_toolbar_exportmodel_save","path":"scripts/action_toolbar_exportmodel_save/action_toolbar_exportmodel_save.yy",},"order":99,},

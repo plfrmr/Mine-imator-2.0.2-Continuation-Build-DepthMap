@@ -73,6 +73,12 @@ function render_high_raytrace()
 	rt_set_param("skyg", color_get_green(sky) / 255)
 	rt_set_param("skyb", color_get_blue(sky) / 255)
 	rt_set_param("skystrength", project_render_rt_sky_light)
+	
+	// Sky color at the horizon (fog and sunset glow): reflections blend from it to the sky color upwards, like the sky behind the scene
+	var horizon = ((background_fog_show && background_fog_sky) ? background_fog_color_final : sky);
+	rt_set_param("horizonr", color_get_red(horizon) / 255)
+	rt_set_param("horizong", color_get_green(horizon) / 255)
+	rt_set_param("horizonb", color_get_blue(horizon) / 255)
 	rt_set_param("ambientr", color_get_red(ambient) / 255)
 	rt_set_param("ambientg", color_get_green(ambient) / 255)
 	rt_set_param("ambientb", color_get_blue(ambient) / 255)
@@ -93,6 +99,7 @@ function render_high_raytrace()
 	// CUSTOM: sky in reflections, firefly clamp of Raytraced mode
 	rt_set_param("skyreflection", project_render_rt_sky_reflection)
 	rt_set_param("rtclamp", project_render_rt_clamp)
+	rt_set_param("reflectionbump", project_render_rt_reflection_bump)
 	
 	// OVERKILL: path tracing with everything on
 	rt_set_param("overkill", render_overkill)

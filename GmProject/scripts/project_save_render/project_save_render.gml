@@ -71,6 +71,7 @@ function project_save_render()
 		json_save_var("time_limit", project_render_time_limit)
 		json_save_var("rt_sky_reflection", project_render_rt_sky_reflection)
 		json_save_var("rt_clamp", project_render_rt_clamp)
+		json_save_var("rt_reflection_bump", project_render_rt_reflection_bump)
 		
 		json_save_var("rt_samples", project_render_rt_samples)
 		json_save_var("rt_precision", project_render_rt_precision)
